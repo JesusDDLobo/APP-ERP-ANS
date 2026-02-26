@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base Colors -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+
+    <!-- ERP Primary Palette -->
+    <color name="ans_primary_dark">#FF2C3E50</color>
+    <color name="ans_primary">#FF34495E</color>
+    <color name="ans_secondary">#FF5D7D9A</color>
+    <color name="ans_accent">#FF8AB6D6</color>
+
+    <!-- ERP Surface/Background Palette -->
+    <color name="ans_white_1">#FFFDFBF7</color>
+    <color name="ans_background">#FFF2F6F8</color>
+
+    <!-- ERP Gray Palette -->
+    <color name="ans_gray_1">#FFE6EAEF</color>
+    <color name="ans_gray_2">#FFCFD8DC</color>
+    <color name="ans_gray_3">#FF90A4AE</color>
+    <color name="ans_gray_4">#FF78909C</color>
+    <color name="ans_gray">@color/ans_gray_3</color>
+
+    <!-- Status Colors -->
+    <color name="ans_green">#FF30C522</color>
+    <color name="ans_yellow">#FFF5BE0B</color>
+    <color name="ans_error">#FFE53935</color>
+
+    <color name="ans_primary_transparent">#3234495E</color>
+    <color name="transparent">#00FFFFFF</color>
+</resources>
+

@@ -1,0 +1,4 @@
+<resources>
+    <style name="Theme.AppANS.Dialog" parent="Theme.MaterialComponents.Light.Dialog.Alert" />
+</resources>
+

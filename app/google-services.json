@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "2001257455",
+    "project_id": "ans-erp-e7692",
+    "storage_bucket": "ans-erp-e7692.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:2001257455:android:509f7f3865ca756604ec1a",
+        "android_client_info": {
+          "package_name": "com.example.app_ans"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAYAJ7rfCBnGMNPlRLTyU6LOC1m69jjn3Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="@color/white"
+    android:layout_marginBottom="8dp">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/notification_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/ans_primary_dark"
+                android:textStyle="bold"
+                android:textSize="@dimen/text_size_subtitle"
+                android:text="Título" />
+
+            <TextView
+                android:id="@+id/notification_message"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:textColor="@color/ans_gray_3"
+                android:textSize="@dimen/text_size_body"
+                android:text="Mensaje" />
+
+            <TextView
+                android:id="@+id/notification_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textColor="@color/ans_gray_4"
+                android:textSize="@dimen/text_size_caption"
+                android:text="Hace 5 minutos" />
+
+        </LinearLayout>
+
+        <View
+            android:id="@+id/unread_indicator"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="8dp"
+            android:layout_marginEnd="8dp"
+            android:background="@drawable/notification_badge_bg"
+            android:visibility="gone" />
+
+    </FrameLayout>
+
+    <ImageButton
+        android:id="@+id/btn_delete_notification"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:src="@drawable/baseline_delete_24"
+        android:background="?attr/selectableItemBackground"
+        android:scaleType="centerInside"
+        android:contentDescription="Eliminar" />
+
+</LinearLayout>

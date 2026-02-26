@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+    <ImageView
+        android:id="@+id/background_left"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="-270dp"
+        android:layout_marginBottom="-180dp"
+        android:src="@drawable/square"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <ImageView
+        android:id="@+id/background_right"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="-220dp"
+        android:layout_marginBottom="-300dp"
+        android:src="@drawable/square"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <ImageView
+        android:id="@+id/background_top"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="-180dp"
+        android:layout_marginTop="-270dp"
+        android:src="@drawable/square"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <include
+        android:id="@+id/navbar"
+        layout="@layout/layout_navbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/greeting_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="16dp"
+        android:text="Hola, Usuario!"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/navbar" />
+
+    <LinearLayout
+        android:id="@+id/gps_test_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/bg_status_chip"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="6dp"
+        app:layout_constraintBottom_toBottomOf="@id/greeting_text"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/greeting_text">
+
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@drawable/ic_location_on_24"
+            app:tint="@color/white" />
+
+        <TextView
+            android:id="@+id/gps_status_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:text="Probar GPS"
+            android:textColor="@color/white"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/password_banner"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="16dp"
+        android:background="@color/ans_yellow"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/greeting_text">
+
+        <TextView
+            android:id="@+id/password_banner_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Debes actualizar tu contraseña"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/password_banner_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Configurar" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/google_status_banner"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="12dp"
+        android:background="@color/ans_secondary"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/password_banner">
+
+        <TextView
+            android:id="@+id/google_status_message"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Servicios de Google no disponibles"
+            android:textColor="@color/white"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/google_status_acknowledge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Entendido"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <GridLayout
+        android:id="@+id/sections_grid"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:columnCount="1"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/google_status_banner"
+        app:layout_goneMarginTop="24dp">
+
+        <GridLayout
+            android:id="@+id/tasks_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginBottom="25dp"
+            android:columnCount="1">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Tareas"
+                android:textAlignment="center"
+                android:textColor="@color/ans_primary_dark"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_gravity="center"
+                android:layout_marginTop="8dp"
+                app:cardElevation="4dp"
+                app:cardCornerRadius="20dp">
+
+                <ImageButton
+                    android:id="@+id/tasks_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@color/ans_primary_transparent"
+                    android:padding="15dp"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/tasks"
+                    app:tint="@color/ans_primary" />
+            </androidx.cardview.widget.CardView>
+        </GridLayout>
+
+        <GridLayout
+            android:id="@+id/hotel_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="25dp"
+            android:columnCount="1">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Hotel"
+                android:textAlignment="center"
+                android:textColor="@color/ans_primary_dark"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_gravity="center"
+                android:layout_marginTop="8dp"
+                app:cardElevation="4dp"
+                app:cardCornerRadius="20dp">
+
+                <ImageButton
+                    android:id="@+id/hotel_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@color/ans_primary_transparent"
+                    android:padding="15dp"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/hotel"
+                    app:tint="@color/ans_primary" />
+            </androidx.cardview.widget.CardView>
+        </GridLayout>
+
+        <GridLayout
+            android:id="@+id/vehicle_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="1">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Vehículo"
+                android:textAlignment="center"
+                android:textColor="@color/ans_primary_dark"
+                android:textSize="22sp"
+                android:textStyle="bold" />
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:layout_gravity="center"
+                android:layout_marginTop="8dp"
+                app:cardElevation="4dp"
+                app:cardCornerRadius="20dp">
+
+                <ImageButton
+                    android:id="@+id/vehicle_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@color/ans_primary_transparent"
+                    android:padding="15dp"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/vehicle"
+                    app:tint="@color/ans_primary" />
+            </androidx.cardview.widget.CardView>
+        </GridLayout>
+    </GridLayout>
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

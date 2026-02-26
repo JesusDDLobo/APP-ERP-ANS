@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingVertical="8dp"
+    android:paddingHorizontal="12dp"
+    android:background="@drawable/bg_comment_bubble"
+    android:layout_marginBottom="8dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tv_comment_author"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Autor"
+            android:textColor="@color/ans_primary_dark"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_comment_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Fecha"
+            android:textColor="@color/ans_gray_3"
+            android:textSize="10sp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tv_comment_content"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="Contenido del comentario..."
+        android:textColor="#334155"
+        android:textSize="12sp" />
+
+</LinearLayout>

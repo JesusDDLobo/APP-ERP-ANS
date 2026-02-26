@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="@color/ans_background">
+
+    <TextView
+        android:id="@+id/maintenance_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Reporte de Mantenimiento"
+        android:textColor="@color/ans_primary_dark"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fadeScrollbars="false"
+        android:overScrollMode="ifContentScrolls">
+        <LinearLayout
+            android:id="@+id/fields_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="16dp" />
+    </ScrollView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:orientation="horizontal"
+        android:gravity="end">
+
+        <Button
+            android:id="@+id/btn_cancel_maintenance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cancelar"
+            android:backgroundTint="@color/ans_gray_3"
+            android:textColor="@color/white"
+            android:layout_marginEnd="8dp"/>
+
+        <Button
+            android:id="@+id/btn_submit_maintenance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Enviar"
+            android:backgroundTint="@color/ans_primary"
+            android:textColor="@color/white" />
+    </LinearLayout>
+</LinearLayout>

@@ -1,0 +1,28 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Base.Theme.APPANS" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="o_mr1">shortEdges</item>
+        <!-- Primary brand color. -->
+        <item name="colorPrimary">@color/ans_primary</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/ans_primary_dark</item>
+        
+        <!-- Secondary brand color. -->
+        <item name="colorSecondary">@color/ans_secondary</item>
+        <item name="colorOnSecondary">@color/white</item>
+        
+        <!-- Tertiary/Accent color. -->
+        <item name="colorTertiary">@color/ans_accent</item>
+        
+        <!-- Status bar and navigation bar. -->
+        <item name="android:statusBarColor">@color/ans_primary_dark</item>
+        <item name="android:navigationBarColor">@color/ans_background</item>
+        
+        <!-- Background and surface. -->
+        <item name="android:windowBackground">@color/ans_background</item>
+        <item name="colorSurface">@color/white</item>
+        <item name="colorOnSurface">@color/ans_primary_dark</item>
+    </style>
+
+    <style name="Theme.APPANS" parent="Base.Theme.APPANS" />
+</resources>

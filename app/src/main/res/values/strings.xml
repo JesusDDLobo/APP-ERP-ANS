@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">APP-ANS</string>
+    <string name="auth_welcome">Bienvenido</string>
+    <string name="auth_email_hint">Correo corporativo</string>
+    <string name="auth_password_hint">Contraseña</string>
+    <string name="auth_login">Ingresar</string>
+    <string name="auth_google">Continuar con Google</string>
+    <string name="auth_forgot">¿Olvidaste tu contraseña?</string>
+    <string name="status_online">Online</string>
+    <string name="status_offline">Offline</string>
+</resources>

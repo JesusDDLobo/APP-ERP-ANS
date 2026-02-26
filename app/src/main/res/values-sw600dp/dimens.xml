@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tablet screen margins -->
+    <dimen name="activity_horizontal_margin">16dp</dimen>
+    <dimen name="activity_vertical_margin">16dp</dimen>
+    <dimen name="task_list_padding">0dp</dimen>
+    
+    <!-- Text sizes (slightly larger for tablets) -->
+    <dimen name="text_size_title">32sp</dimen>
+    <dimen name="text_size_subtitle">24sp</dimen>
+    <dimen name="text_size_body">20sp</dimen>
+    <dimen name="text_size_small">18sp</dimen>
+    <dimen name="text_size_caption">16sp</dimen>
+
+    <!-- Card dimensions -->
+    <dimen name="card_corner_radius">24dp</dimen>
+    <dimen name="card_elevation">8dp</dimen>
+    <dimen name="card_padding">24dp</dimen>
+</resources>

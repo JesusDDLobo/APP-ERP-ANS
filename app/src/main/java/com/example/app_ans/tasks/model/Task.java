@@ -1,0 +1,138 @@
+package com.example.app_ans.tasks.model;
+
+import com.example.app_ans.vehicles.model.Vehicle;
+import com.google.gson.annotations.SerializedName;
+import java.io.Serializable;
+import java.util.List;
+
+/** Represents a Task (Ticket) assigned to a user. */
+public class Task implements Serializable {
+    private int id;
+
+    @SerializedName("public_id")
+    private String publicId;
+
+    @SerializedName("created_at")
+    private String createdAt;
+
+    @SerializedName("content")
+    private TaskContent content;
+
+    @SerializedName("state")
+    private TaskState state;
+
+    @SerializedName("assigned_users")
+    private List<AssignedUser> assignedUsers;
+
+    @SerializedName("technicians")
+    private List<AssignedUser> technicians;
+
+    @SerializedName("advances")
+    private List<TaskAdvance> advances;
+
+    @SerializedName("previous_ticket")
+    private PreviousTask previousTicket;
+
+    @SerializedName("questions")
+    private List<TaskQuestion> questions;
+
+    @SerializedName("advances_count")
+    private int advancesCount;
+
+    @SerializedName("time_logs")
+    private List<TaskTimeLog> timeLogs;
+
+    @SerializedName("is_running")
+    private boolean isRunning;
+
+    @SerializedName("total_time_spent")
+    private String totalTimeSpent;
+
+    @SerializedName("vehicle_plate")
+    private String vehiclePlate;
+
+    @SerializedName("vehicle")
+    private Vehicle vehicle;
+
+    public int getId() { return id; }
+    public String getPublicId() { return publicId; }
+    public TaskState getState() { return state; }
+    public String getStatus() {
+        return state != null ? state.getValue() : "Desconocido";
+    }
+    public String getCreatedAt() { return createdAt; }
+    public TaskContent getContent() { return content; }
+    public List<AssignedUser> getAssignedUsers() {
+        return assignedUsers != null ? assignedUsers : technicians;
+    }
+    public List<TaskAdvance> getAdvances() { return advances; }
+    public PreviousTask getPreviousTicket() { return previousTicket; }
+    public List<TaskQuestion> getQuestions() { return questions; }
+    public int getAdvancesCount() { return advancesCount; }
+    public List<TaskTimeLog> getTimeLogs() { return timeLogs; }
+
+    public boolean isRunning() {
+        return isRunning;
+    }
+
+    public void setRunning(boolean running) {
+        this.isRunning = running;
+    }
+
+    public String getTotalTimeSpent() { return totalTimeSpent; }
+    public void setTotalTimeSpent(String totalTimeSpent) { this.totalTimeSpent = totalTimeSpent; }
+
+    public String getVehiclePlate() { return vehiclePlate; }
+    public Vehicle getVehicle() { return vehicle; }
+
+    public static class TaskTimeLog implements Serializable {
+        private int id;
+        @SerializedName("start_time")
+        private String startTime;
+        @SerializedName("end_time")
+        private String endTime;
+        private String duration;
+
+        public int getId() { return id; }
+        public String getStartTime() { return startTime; }
+        public String getEndTime() { return endTime; }
+        public String getDuration() { return duration; }
+    }
+
+    public static class PreviousTask implements Serializable {
+        private int id;
+        @SerializedName("public_id")
+        private String publicId;
+        public int getId() { return id; }
+        public String getPublicId() { return publicId; }
+    }
+
+    public static class TaskState implements Serializable {
+        private int id;
+        private String value;
+
+        public int getId() { return id; }
+        public String getValue() { return value; }
+    }
+
+    public static class TaskContent implements Serializable {
+        private String name;
+        private String description;
+        @SerializedName("start_time")
+        private String startTime;
+        @SerializedName("end_time")
+        private String endTime;
+        @SerializedName("vehicle_id")
+        private Integer vehicleId;
+        private Double latitude;
+        private Double longitude;
+
+        public String getName() { return name; }
+        public String getDescription() { return description; }
+        public String getStartTime() { return startTime; }
+        public String getEndTime() { return endTime; }
+        public Integer getVehicleId() { return vehicleId; }
+        public Double getLatitude() { return latitude; }
+        public Double getLongitude() { return longitude; }
+    }
+}
