@@ -14,7 +14,6 @@
         android:layout_height="120dp"
         android:background="@color/dashboard_blue"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -31,11 +30,11 @@
         android:id="@+id/password_banner"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="12dp"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="8dp"
         android:background="@color/ans_yellow"
         android:orientation="horizontal"
-        android:padding="12dp"
+        android:padding="10dp"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -60,11 +59,11 @@
         android:id="@+id/google_status_banner"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="12dp"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="8dp"
         android:background="@color/ans_secondary"
         android:orientation="vertical"
-        android:padding="12dp"
+        android:padding="10dp"
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -82,7 +81,7 @@
             android:id="@+id/google_status_acknowledge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="6dp"
             android:text="Entendido"
             android:visibility="gone" />
     </LinearLayout>
@@ -104,23 +103,25 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:alignmentMode="alignMargins"
-            android:columnCount="2"
-            android:paddingStart="20dp"
-            android:paddingTop="24dp"
-            android:paddingEnd="20dp"
-            android:paddingBottom="24dp"
+            android:columnCount="3"
+            android:paddingStart="12dp"
+            android:paddingTop="10dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="10dp"
             android:rowCount="2"
             android:useDefaultMargins="true">
 
             <!-- TAREAS -->
             <androidx.cardview.widget.CardView
                 android:layout_width="0dp"
-                android:layout_height="116dp"
+                android:layout_height="78dp"
+                android:layout_column="0"
+                android:layout_row="0"
                 android:layout_columnWeight="1"
-                android:layout_margin="8dp"
+                android:layout_margin="6dp"
                 app:cardBackgroundColor="@color/dashboard_blue"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="6dp">
+                app:cardCornerRadius="14dp"
+                app:cardElevation="4dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -130,22 +131,22 @@
                     android:foreground="?attr/selectableItemBackgroundBorderless"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="14dp">
+                    android:padding="8dp">
 
                     <androidx.cardview.widget.CardView
-                        android:layout_width="58dp"
-                        android:layout_height="58dp"
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
                         app:cardBackgroundColor="@color/dashboard_blue_light"
-                        app:cardCornerRadius="14dp"
+                        app:cardCornerRadius="10dp"
                         app:cardElevation="0dp">
 
                         <ImageButton
                             android:id="@+id/tasks_button"
-                            android:layout_width="58dp"
-                            android:layout_height="58dp"
+                            android:layout_width="42dp"
+                            android:layout_height="42dp"
                             android:background="@android:color/transparent"
                             android:contentDescription="Abrir tareas"
-                            android:padding="7dp"
+                            android:padding="5dp"
                             android:scaleType="centerInside"
                             android:src="@drawable/tasks"
                             app:tint="@android:color/white" />
@@ -154,10 +155,10 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="6dp"
                         android:text="Tareas"
                         android:textColor="@android:color/white"
-                        android:textSize="16sp"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
@@ -165,12 +166,14 @@
             <!-- VEHICULO -->
             <androidx.cardview.widget.CardView
                 android:layout_width="0dp"
-                android:layout_height="116dp"
+                android:layout_height="78dp"
+                android:layout_column="1"
+                android:layout_row="0"
                 android:layout_columnWeight="1"
-                android:layout_margin="8dp"
+                android:layout_margin="6dp"
                 app:cardBackgroundColor="@android:color/white"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="6dp">
+                app:cardCornerRadius="14dp"
+                app:cardElevation="4dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -180,22 +183,22 @@
                     android:foreground="?attr/selectableItemBackgroundBorderless"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="14dp">
+                    android:padding="8dp">
 
                     <androidx.cardview.widget.CardView
-                        android:layout_width="58dp"
-                        android:layout_height="58dp"
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
                         app:cardBackgroundColor="@color/dashboard_blue"
-                        app:cardCornerRadius="14dp"
+                        app:cardCornerRadius="10dp"
                         app:cardElevation="0dp">
 
                         <ImageButton
                             android:id="@+id/vehicle_button"
-                            android:layout_width="58dp"
-                            android:layout_height="58dp"
+                            android:layout_width="42dp"
+                            android:layout_height="42dp"
                             android:background="@android:color/transparent"
                             android:contentDescription="Abrir vehículo"
-                            android:padding="7dp"
+                            android:padding="5dp"
                             android:scaleType="centerInside"
                             android:src="@drawable/vehicle"
                             app:tint="@android:color/white" />
@@ -204,10 +207,10 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="6dp"
                         android:text="Vehículo"
                         android:textColor="@color/dashboard_text_dark"
-                        android:textSize="16sp"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
@@ -215,12 +218,14 @@
             <!-- HOTEL -->
             <androidx.cardview.widget.CardView
                 android:layout_width="0dp"
-                android:layout_height="116dp"
+                android:layout_height="78dp"
+                android:layout_column="2"
+                android:layout_row="0"
                 android:layout_columnWeight="1"
-                android:layout_margin="8dp"
+                android:layout_margin="6dp"
                 app:cardBackgroundColor="@color/dashboard_blue"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="6dp">
+                app:cardCornerRadius="14dp"
+                app:cardElevation="4dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -230,22 +235,22 @@
                     android:foreground="?attr/selectableItemBackgroundBorderless"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="14dp">
+                    android:padding="8dp">
 
                     <androidx.cardview.widget.CardView
-                        android:layout_width="58dp"
-                        android:layout_height="58dp"
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
                         app:cardBackgroundColor="@android:color/white"
-                        app:cardCornerRadius="14dp"
+                        app:cardCornerRadius="10dp"
                         app:cardElevation="0dp">
 
                         <ImageButton
                             android:id="@+id/hotel_button"
-                            android:layout_width="58dp"
-                            android:layout_height="58dp"
+                            android:layout_width="42dp"
+                            android:layout_height="42dp"
                             android:background="@android:color/transparent"
                             android:contentDescription="Abrir hotel"
-                            android:padding="7dp"
+                            android:padding="5dp"
                             android:scaleType="centerInside"
                             android:src="@drawable/hotel"
                             app:tint="@color/dashboard_blue" />
@@ -254,10 +259,10 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="6dp"
                         android:text="Hotel"
                         android:textColor="@android:color/white"
-                        android:textSize="16sp"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
@@ -265,12 +270,14 @@
             <!-- RENDICIONES -->
             <androidx.cardview.widget.CardView
                 android:layout_width="0dp"
-                android:layout_height="116dp"
+                android:layout_height="78dp"
+                android:layout_column="0"
+                android:layout_row="1"
                 android:layout_columnWeight="1"
-                android:layout_margin="8dp"
+                android:layout_margin="6dp"
                 app:cardBackgroundColor="@android:color/white"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="6dp">
+                app:cardCornerRadius="14dp"
+                app:cardElevation="4dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -280,22 +287,22 @@
                     android:foreground="?attr/selectableItemBackgroundBorderless"
                     android:gravity="center"
                     android:orientation="vertical"
-                    android:padding="14dp">
+                    android:padding="8dp">
 
                     <androidx.cardview.widget.CardView
-                        android:layout_width="58dp"
-                        android:layout_height="58dp"
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
                         app:cardBackgroundColor="@color/dashboard_blue"
-                        app:cardCornerRadius="14dp"
+                        app:cardCornerRadius="10dp"
                         app:cardElevation="0dp">
 
                         <ImageButton
                             android:id="@+id/renditions_button"
-                            android:layout_width="58dp"
-                            android:layout_height="58dp"
+                            android:layout_width="42dp"
+                            android:layout_height="42dp"
                             android:background="@android:color/transparent"
                             android:contentDescription="Abrir rendiciones"
-                            android:padding="7dp"
+                            android:padding="5dp"
                             android:scaleType="centerInside"
                             android:src="@drawable/rendiciones"
                             app:tint="@android:color/white" />
@@ -304,10 +311,10 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="6dp"
                         android:text="Rendiciones"
                         android:textColor="@color/dashboard_text_dark"
-                        android:textSize="16sp"
+                        android:textSize="12sp"
                         android:textStyle="bold" />
                 </LinearLayout>
             </androidx.cardview.widget.CardView>

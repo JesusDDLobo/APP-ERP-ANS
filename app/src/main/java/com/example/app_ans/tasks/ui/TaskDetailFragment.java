@@ -1,48 +1,45 @@
 package com.example.app_ans.tasks.ui;
 
+import android.Manifest;
+import android.app.AlertDialog;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
-import com.example.app_ans.databinding.FragmentTaskDetailBinding;
-import com.example.app_ans.core.utils.DateUtils;
-import com.example.app_ans.tasks.model.Task;
-
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import android.net.Uri;
-import android.app.AlertDialog;
-import android.widget.ImageView;
 import com.example.app_ans.R;
+import com.example.app_ans.core.utils.DateUtils;
+import com.example.app_ans.databinding.FragmentTaskDetailBinding;
+import com.example.app_ans.tasks.model.AssignedUser;
+import com.example.app_ans.tasks.model.Task;
 import com.example.app_ans.tasks.model.TaskAdvance;
-
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
 import com.google.android.gms.tasks.CancellationTokenSource;
-import android.location.Location;
-import android.Manifest;
-import android.content.pm.PackageManager;
-import androidx.core.app.ActivityCompat;
 
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
-import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
-
-import android.os.Handler;
-import android.os.Looper;
-import android.os.SystemClock;
 
 public class TaskDetailFragment extends Fragment {
     private FragmentTaskDetailBinding binding;
@@ -60,6 +57,10 @@ public class TaskDetailFragment extends Fragment {
     private FusedLocationProviderClient fusedLocationClient;
     private Marker userMarker;
 
+    private final Handler timerHandler = new Handler(Looper.getMainLooper());
+    private Runnable timerRunnable;
+    private long timerBaseTime = 0;
+
     private final ActivityResultLauncher<String[]> locationPermissionLauncher = registerForActivityResult(
             new ActivityResultContracts.RequestMultiplePermissions(),
             result -> {
@@ -73,11 +74,6 @@ public class TaskDetailFragment extends Fragment {
             }
     );
 
-    // Timer fields
-    private final Handler timerHandler = new Handler(Looper.getMainLooper());
-    private Runnable timerRunnable;
-    private long timerBaseTime = 0; // elapsedRealtime reference
-
     private final ActivityResultLauncher<String[]> advanceFilePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.OpenMultipleDocuments(),
             uris -> {
@@ -87,7 +83,11 @@ public class TaskDetailFragment extends Fragment {
                         if (com.example.app_ans.core.utils.FileStorageUtils.isValidFile(getContext(), uri)) {
                             validUris.add(uri);
                         } else {
-                            Toast.makeText(getContext(), "Archivo no permitido: " + com.example.app_ans.core.utils.FileStorageUtils.getFileName(getContext(), uri), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(
+                                    getContext(),
+                                    "Archivo no permitido: " + com.example.app_ans.core.utils.FileStorageUtils.getFileName(getContext(), uri),
+                                    Toast.LENGTH_SHORT
+                            ).show();
                         }
                     }
                     if (!validUris.isEmpty()) {
@@ -149,15 +149,18 @@ public class TaskDetailFragment extends Fragment {
 
     @Nullable
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
         binding = FragmentTaskDetailBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        // Initialize OSMDroid configuration
-        Configuration.getInstance().load(getContext(), android.preference.PreferenceManager.getDefaultSharedPreferences(getContext()));
+        Configuration.getInstance().load(
+                getContext(),
+                android.preference.PreferenceManager.getDefaultSharedPreferences(getContext())
+        );
 
         super.onViewCreated(view, savedInstanceState);
 
@@ -165,6 +168,7 @@ public class TaskDetailFragment extends Fragment {
 
         viewModel = new ViewModelProvider(requireActivity()).get(TaskViewModel.class);
         setupVehicleViewModel();
+        setupBackNavigation();
 
         if (getArguments() != null) {
             if (getArguments().containsKey("TASK_DATA")) {
@@ -176,12 +180,9 @@ public class TaskDetailFragment extends Fragment {
 
                 viewModel.loadTaskDetail(task.getId());
                 viewModel.loadPendingAdvances(task.getId());
-
-                // Observe background uploads for this task to refresh UI
                 viewModel.observeUploadStatus(task.getId(), getViewLifecycleOwner());
             } else if (getArguments().containsKey("TASK_ID")) {
                 int taskId = getArguments().getInt("TASK_ID");
-                // Minimal setup while we wait for data
                 setupRecyclerView();
                 setupListeners();
                 setupObservers();
@@ -194,38 +195,11 @@ public class TaskDetailFragment extends Fragment {
     }
 
     @Override
-    public void onDestroyView() {
-        stopTimer();
-        super.onDestroyView();
-        binding = null;
-    }
-
-    private void calculateTimerBaseAndStart() {
-        if (task == null || !task.isRunning()) return;
-
-        // PROTECCIÓN CRÍTICA: Si el cronómetro de la UI ya está en marcha,
-        // NO lo recalculamos. El cálculo del servidor puede tener latencia o ruido.
-        if (timerRunnable != null) return;
-
-        // Calculamos los segundos totales basándonos en el motor de desfase inteligente
-        long totalElapsedSecondsCalculated = DateUtils.getTotalRunningSeconds(task);
-
-        // Seteamos la base absoluta relativa al hardware (SystemClock.elapsedRealtime)
-        // Esto garantiza que el cronómetro avance siempre de 1 en 1 segundo.
-        timerBaseTime = SystemClock.elapsedRealtime() - (totalElapsedSecondsCalculated * 1000);
-
-        startTimer();
-        updateTimingUI();
-    }
-
-    @Override
     public void onResume() {
         super.onResume();
-        if (binding != null && binding.mapView != null) {
-            binding.mapView.onResume();
-        }
+        binding.mapView.onResume();
+
         if (task != null) {
-            // Al volver a la app, forzamos re-sincronización del cronómetro con la hora actual
             if (task.isRunning()) {
                 calculateTimerBaseAndStart();
             }
@@ -235,11 +209,144 @@ public class TaskDetailFragment extends Fragment {
 
     @Override
     public void onPause() {
-        if (binding != null && binding.mapView != null) {
-            binding.mapView.onPause();
-        }
+        binding.mapView.onPause();
         stopTimer();
         super.onPause();
+    }
+
+    @Override
+    public void onDestroyView() {
+        stopTimer();
+        super.onDestroyView();
+        binding = null;
+    }
+
+    private void setupBackNavigation() {
+        binding.backToTasks.setOnClickListener(v -> requireActivity().finish());
+    }
+
+    private void setupUI() {
+        renderHeader();
+        renderDescription();
+        renderLocationSection();
+        renderVehicleSection();
+        renderPreviousTicketSection();
+    }
+
+    private void renderHeader() {
+        if (task == null) return;
+
+        binding.detailPublicId.setText(task.getPublicId());
+        binding.detailStatus.setText(task.getStatus());
+        com.example.app_ans.core.ui.StatusUtils.applyStatusColor(binding.detailStatus, task.getStatus());
+
+        if (task.getContent() != null) {
+            binding.detailTitle.setText(task.getContent().getName());
+
+            String startTime = DateUtils.formatDateTime(task.getContent().getStartTime());
+            String endTime = DateUtils.formatDateTime(task.getContent().getEndTime());
+            binding.detailDateRange.setText(startTime + " - " + endTime);
+        }
+    }
+
+    private void renderDescription() {
+        if (task == null || task.getContent() == null) return;
+
+        String description = task.getContent().getDescription();
+        if (description != null && !description.trim().isEmpty()) {
+            binding.detailsLabel.setVisibility(View.VISIBLE);
+            binding.detailDescription.setVisibility(View.VISIBLE);
+            binding.detailDescription.setText(description);
+        } else {
+            binding.detailsLabel.setVisibility(View.GONE);
+            binding.detailDescription.setVisibility(View.GONE);
+        }
+    }
+
+    private void renderLocationSection() {
+        if (task == null || task.getContent() == null) return;
+
+        if (task.getContent().getLatitude() != null && task.getContent().getLongitude() != null) {
+            binding.locationContainer.setVisibility(View.VISIBLE);
+
+            double lat = task.getContent().getLatitude();
+            double lon = task.getContent().getLongitude();
+
+            binding.detailLocation.setText("Lat: " + lat + ", Lon: " + lon);
+            setupMap(lat, lon);
+        } else {
+            binding.locationContainer.setVisibility(View.GONE);
+        }
+    }
+
+    private void renderVehicleSection() {
+        if (task == null) return;
+
+        if (task.getVehicle() != null) {
+            binding.vehicleContainer.setVisibility(View.VISIBLE);
+            binding.detailVehiclePlate.setText(task.getVehicle().getPlate());
+
+            String vehicleInfo = task.getVehicle().getBrand() + " "
+                    + task.getVehicle().getModel() + " ("
+                    + task.getVehicle().getYear() + ")";
+            binding.detailVehicleInfo.setText(vehicleInfo);
+
+            String typeName = task.getVehicle().getType() != null
+                    ? task.getVehicle().getType().getName()
+                    : "Vehículo";
+            String stateName = task.getVehicle().getState() != null
+                    ? task.getVehicle().getState().getName()
+                    : "";
+
+            String extraInfo = typeName + " | " + String.format("%.1f Km", task.getVehicle().getOdometer());
+            if (!stateName.isEmpty()) {
+                extraInfo += " | " + stateName;
+            }
+            binding.detailVehicleExtra.setText(extraInfo);
+
+            if (task.getVehicle().getProvider() != null) {
+                binding.detailVehicleProvider.setText(task.getVehicle().getProvider().getName());
+            } else {
+                binding.detailVehicleProvider.setText("ANS Comunicaciones S.A.S.");
+            }
+
+            if (task.getVehicle().getMaintenanceStatus() != null
+                    && task.getVehicle().getMaintenanceStatus().isCanFill()) {
+                binding.btnFillMaintenance.setVisibility(View.VISIBLE);
+                binding.btnFillMaintenance.setOnClickListener(v -> showMaintenanceForm(task.getVehicle()));
+            } else {
+                binding.btnFillMaintenance.setVisibility(View.GONE);
+            }
+        } else if (task.getVehiclePlate() != null && !task.getVehiclePlate().isEmpty()) {
+            binding.vehicleContainer.setVisibility(View.VISIBLE);
+            binding.detailVehiclePlate.setText(task.getVehiclePlate());
+            binding.detailVehicleInfo.setText("Cargando detalles del vehículo...");
+            binding.btnFillMaintenance.setVisibility(View.GONE);
+        } else {
+            binding.vehicleContainer.setVisibility(View.GONE);
+        }
+    }
+
+    private void renderPreviousTicketSection() {
+        if (task == null) return;
+
+        if (task.getPreviousTicket() != null) {
+            binding.previousTicketContainer.setVisibility(View.VISIBLE);
+            binding.previousTicketInfo.setText(task.getPreviousTicket().getPublicId());
+        } else {
+            binding.previousTicketContainer.setVisibility(View.GONE);
+        }
+    }
+
+    private void calculateTimerBaseAndStart() {
+        if (task == null || !task.isRunning()) return;
+        if (timerRunnable != null) return;
+
+        long totalElapsedSecondsCalculated = DateUtils.getTotalRunningSeconds(task);
+        timerBaseTime = SystemClock.elapsedRealtime() - (totalElapsedSecondsCalculated * 1000);
+
+        startTimer();
+        updateTimingUI();
     }
 
     private void startTimer() {
@@ -254,14 +361,11 @@ public class TaskDetailFragment extends Fragment {
                     return;
                 }
 
-                // Cálculo local puro basado en elapsedRealtime
                 long totalCurrentSeconds = (SystemClock.elapsedRealtime() - timerBaseTime) / 1000;
                 if (totalCurrentSeconds < 0) totalCurrentSeconds = 0;
 
                 String formatted = DateUtils.formatSecondsToDuration(totalCurrentSeconds);
                 binding.tvTotalTime.setText(formatted);
-
-                // Actualizamos el objeto en memoria para que no "parpadee" al navegar entre pestañas
                 task.setTotalTimeSpent(formatted);
 
                 timerHandler.postDelayed(this, 1000);
@@ -274,86 +378,6 @@ public class TaskDetailFragment extends Fragment {
         if (timerRunnable != null) {
             timerHandler.removeCallbacks(timerRunnable);
             timerRunnable = null;
-        }
-    }
-
-    private void setupUI() {
-        binding.detailPublicId.setText(task.getPublicId());
-        binding.detailStatus.setText(task.getStatus());
-        com.example.app_ans.core.ui.StatusUtils.applyStatusColor(binding.detailStatus, task.getStatus());
-
-        if (task.getContent() != null) {
-            binding.detailTitle.setText(task.getContent().getName());
-            binding.detailDescription.setText(task.getContent().getDescription());
-            
-            String startTime = DateUtils.formatDateTime(task.getContent().getStartTime());
-            String endTime = DateUtils.formatDateTime(task.getContent().getEndTime());
-            String dateRange = startTime + " - " + endTime;
-            binding.detailDateRange.setText(dateRange);
-
-            // Setup Location info
-            if (task.getContent().getLatitude() != null && task.getContent().getLongitude() != null) {
-                binding.locationContainer.setVisibility(View.VISIBLE);
-                double lat = task.getContent().getLatitude();
-                double lon = task.getContent().getLongitude();
-
-                String locationText = "Lat: " + lat + ", Lon: " + lon;
-                binding.detailLocation.setText(locationText);
-
-                setupMap(lat, lon);
-            } else {
-                binding.locationContainer.setVisibility(View.GONE);
-            }
-        }
-
-        // Setup Vehicle info
-        if (task.getVehicle() != null) {
-            binding.vehicleContainer.setVisibility(View.VISIBLE);
-            binding.detailVehiclePlate.setText(task.getVehicle().getPlate());
-
-            String vehicleInfo = task.getVehicle().getBrand() + " " +
-                               task.getVehicle().getModel() + " (" +
-                               task.getVehicle().getYear() + ")";
-            binding.detailVehicleInfo.setText(vehicleInfo);
-
-            String typeName = task.getVehicle().getType() != null ? task.getVehicle().getType().getName() : "Vehículo";
-            String stateName = task.getVehicle().getState() != null ? task.getVehicle().getState().getName() : "";
-
-            String extraInfo = typeName + " | " + String.format("%.1f Km", task.getVehicle().getOdometer());
-            if (!stateName.isEmpty()) {
-                extraInfo += " | " + stateName;
-            }
-            binding.detailVehicleExtra.setText(extraInfo);
-
-            if (task.getVehicle().getProvider() != null) {
-                binding.detailVehicleProvider.setText(task.getVehicle().getProvider().getName());
-            } else {
-                binding.detailVehicleProvider.setText("ANS Comunicaciones S.A.S.");
-            }
-
-            if (task.getVehicle().getMaintenanceStatus() != null &&
-                task.getVehicle().getMaintenanceStatus().isCanFill()) {
-                binding.btnFillMaintenance.setVisibility(View.VISIBLE);
-                binding.btnFillMaintenance.setOnClickListener(v -> {
-                    showMaintenanceForm(task.getVehicle());
-                });
-            } else {
-                binding.btnFillMaintenance.setVisibility(View.GONE);
-            }
-        } else if (task.getVehiclePlate() != null && !task.getVehiclePlate().isEmpty()) {
-            binding.vehicleContainer.setVisibility(View.VISIBLE);
-            binding.detailVehiclePlate.setText(task.getVehiclePlate());
-            binding.detailVehicleInfo.setText("Cargando detalles del vehículo...");
-            binding.btnFillMaintenance.setVisibility(View.GONE);
-        } else {
-            binding.vehicleContainer.setVisibility(View.GONE);
-        }
-
-        if (task.getPreviousTicket() != null) {
-            binding.previousTicketContainer.setVisibility(View.VISIBLE);
-            binding.previousTicketInfo.setText(task.getPreviousTicket().getPublicId());
-        } else {
-            binding.previousTicketContainer.setVisibility(View.GONE);
         }
     }
 
@@ -370,7 +394,6 @@ public class TaskDetailFragment extends Fragment {
 
                     @Override
                     public void onPickFiles() {
-                        // Not used in edit mode
                     }
                 });
                 editDialog.setInitialContent(advance.getContent());
@@ -380,20 +403,18 @@ public class TaskDetailFragment extends Fragment {
             @Override
             public void onDelete(TaskAdvance advance) {
                 new AlertDialog.Builder(getContext())
-                    .setTitle("Eliminar Avance")
-                    .setMessage("¿Estás seguro de que deseas eliminar este avance?")
-                    .setPositiveButton("Eliminar", (dialog, which) -> {
-                        viewModel.deleteAdvance(task.getId(), advance.getId());
-                    })
-                    .setNegativeButton("Cancelar", null)
-                    .show();
+                        .setTitle("Eliminar Avance")
+                        .setMessage("¿Estás seguro de que deseas eliminar este avance?")
+                        .setPositiveButton("Eliminar", (dialog, which) ->
+                                viewModel.deleteAdvance(task.getId(), advance.getId()))
+                        .setNegativeButton("Cancelar", null)
+                        .show();
             }
 
             @Override
             public void onFileClick(String pathOrUrl, String mimeType) {
                 if (pathOrUrl == null) return;
 
-                // Si es un link de visualización de Drive o cualquier URL externa que no sea imagen directa
                 boolean isDriveWebLink = pathOrUrl.contains("drive.google.com") && pathOrUrl.contains("/view");
 
                 if (mimeType != null && mimeType.startsWith("image/") && !isDriveWebLink) {
@@ -406,14 +427,12 @@ public class TaskDetailFragment extends Fragment {
                         if (mimeType != null && !mimeType.isEmpty() && !isDriveWebLink) {
                             intent.setDataAndType(uri, mimeType);
                         } else {
-                            // Si no hay mimeType o es link de Drive, dejar que el sistema decida (Browser/Drive App)
                             intent.setData(uri);
                         }
 
                         intent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
                         startActivity(intent);
                     } catch (Exception e) {
-                        // Fallback a apertura simple de URL
                         try {
                             startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW, Uri.parse(pathOrUrl)));
                         } catch (Exception e2) {
@@ -423,6 +442,7 @@ public class TaskDetailFragment extends Fragment {
                 }
             }
         });
+
         binding.advancesRecycler.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.advancesRecycler.setAdapter(advanceAdapter);
     }
@@ -431,31 +451,32 @@ public class TaskDetailFragment extends Fragment {
         View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_image_viewer, null);
         ImageView imageView = dialogView.findViewById(R.id.full_screen_image);
         View btnClose = dialogView.findViewById(R.id.btn_close_viewer);
-        
+
         com.bumptech.glide.Glide.with(this)
-            .load(imageUrl)
-            .into(imageView);
-            
-        AlertDialog dialog = new AlertDialog.Builder(getContext(), android.R.style.Theme_Black_NoTitleBar_Fullscreen)
-            .setView(dialogView)
-            .create();
-            
+                .load(imageUrl)
+                .into(imageView);
+
+        AlertDialog dialog = new AlertDialog.Builder(
+                getContext(),
+                android.R.style.Theme_Black_NoTitleBar_Fullscreen
+        ).setView(dialogView).create();
+
         btnClose.setOnClickListener(v -> dialog.dismiss());
         dialog.show();
     }
 
     private void setupListeners() {
-        // Toolbar removed, global navbar in activity handles back navigation
-
         binding.btnMyLocation.setOnClickListener(v -> fetchCurrentLocation());
         binding.btnCheckLocationTop.setOnClickListener(v -> fetchCurrentLocation());
 
-        // Open full screen button logic
         if (getActivity() instanceof com.example.app_ans.TasksActivity) {
             binding.btnOpenFull.setVisibility(View.VISIBLE);
             binding.btnOpenFull.setOnClickListener(v -> {
                 if (task != null) {
-                    android.content.Intent intent = new android.content.Intent(getContext(), com.example.app_ans.tasks.ui.TaskDetailActivity.class);
+                    android.content.Intent intent = new android.content.Intent(
+                            getContext(),
+                            com.example.app_ans.tasks.ui.TaskDetailActivity.class
+                    );
                     intent.putExtra("TASK_DATA", task);
                     startActivity(intent);
                 }
@@ -482,7 +503,6 @@ public class TaskDetailFragment extends Fragment {
             viewModel.loadDraft(currentDraftType, task.getId());
         });
 
-        // Setup Search for Advances using a more robust root-based lookup to avoid DataBinding generation issues
         View searchBarRoot = binding.getRoot().findViewById(R.id.advance_search_bar);
         if (searchBarRoot != null) {
             androidx.appcompat.widget.SearchView searchView = searchBarRoot.findViewById(R.id.search_view);
@@ -513,17 +533,15 @@ public class TaskDetailFragment extends Fragment {
         if (task == null) return;
 
         if (task.isRunning()) {
-            // Pausar: no requiere validación de ubicación
             viewModel.toggleTimer(task.getId(), binding.tvTotalTime.getText().toString());
         } else {
-            // Iniciar/Reanudar: requiere validación de ubicación
             validateLocationAndStartTask();
         }
     }
 
     private void validateLocationAndStartTask() {
-        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-            ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
             locationPermissionLauncher.launch(new String[]{
                     Manifest.permission.ACCESS_FINE_LOCATION,
@@ -540,9 +558,9 @@ public class TaskDetailFragment extends Fragment {
                 .addOnSuccessListener(location -> {
                     binding.btnTimer.setEnabled(true);
                     if (location != null) {
-                        boolean hasTaskLocation = task.getContent() != null &&
-                                task.getContent().getLatitude() != null &&
-                                task.getContent().getLongitude() != null;
+                        boolean hasTaskLocation = task.getContent() != null
+                                && task.getContent().getLatitude() != null
+                                && task.getContent().getLongitude() != null;
 
                         if (hasTaskLocation) {
                             float[] results = new float[1];
@@ -559,11 +577,14 @@ public class TaskDetailFragment extends Fragment {
                                 showFarDistanceDialog(distance);
                             }
                         } else {
-                            // Tarea sin ubicación, permitir inicio pero registrar ubicación del técnico
                             proceedWithStartTask(location);
                         }
                     } else {
-                        Toast.makeText(getContext(), "No se pudo obtener la ubicación actual. Por favor verifica tu GPS.", Toast.LENGTH_LONG).show();
+                        Toast.makeText(
+                                getContext(),
+                                "No se pudo obtener la ubicación actual. Por favor verifica tu GPS.",
+                                Toast.LENGTH_LONG
+                        ).show();
                     }
                 })
                 .addOnFailureListener(e -> {
@@ -575,17 +596,23 @@ public class TaskDetailFragment extends Fragment {
     private void showFarDistanceDialog(float distance) {
         String msg;
         if (distance < 1000) {
-            msg = String.format("Te encuentras a %.0f metros de la tarea. Debes estar a menos de 100 metros para poder iniciarla.", distance);
+            msg = String.format(
+                    "Te encuentras a %.0f metros de la tarea. Debes estar a menos de 100 metros para poder iniciarla.",
+                    distance
+            );
         } else {
-            msg = String.format("Te encuentras a %.2f km de la tarea. Debes estar a menos de 100 metros para poder iniciarla.", distance / 1000f);
+            msg = String.format(
+                    "Te encuentras a %.2f km de la tarea. Debes estar a menos de 100 metros para poder iniciarla.",
+                    distance / 1000f
+            );
         }
 
         new AlertDialog.Builder(getContext())
-            .setTitle("Fuera de Rango")
-            .setMessage(msg)
-            .setPositiveButton("Entendido", null)
-            .setIcon(android.R.drawable.ic_dialog_alert)
-            .show();
+                .setTitle("Fuera de Rango")
+                .setMessage(msg)
+                .setPositiveButton("Entendido", null)
+                .setIcon(android.R.drawable.ic_dialog_alert)
+                .show();
     }
 
     private void proceedWithStartTask(Location location) {
@@ -593,7 +620,6 @@ public class TaskDetailFragment extends Fragment {
         viewModel.recordTechnicianLocation(task.getId(), location.getLatitude(), location.getLongitude());
         updateMapWithUserLocation(location.getLatitude(), location.getLongitude());
 
-        // Calcular y mostrar distancia real si hay ubicación de tarea
         if (task.getContent() != null && task.getContent().getLatitude() != null) {
             float[] results = new float[1];
             Location.distanceBetween(
@@ -607,23 +633,26 @@ public class TaskDetailFragment extends Fragment {
 
     private void showCompleteDialog(java.util.List<com.example.app_ans.tasks.model.TaskQuestion> questions, String draft) {
         if (getActivity() == null) return;
+
         getActivity().runOnUiThread(() -> {
             currentCompleteDialog = new TaskCompleteDialog(getContext(), questions, (answers, files) -> {
                 viewModel.completeTask(task.getId(), answers, new java.util.ArrayList<>(files.values()));
             });
+
             if (draft != null) {
                 currentCompleteDialog.setInitialDraft(draft);
             }
-            currentCompleteDialog.setOnDraftChangedListener(newDraft -> {
-                viewModel.saveDraft("COMPLETION", task.getId(), newDraft);
-            });
-            currentCompleteDialog.setOnDismissListener(() -> {
-                currentCompleteDialog = null;
-            });
+
+            currentCompleteDialog.setOnDraftChangedListener(newDraft ->
+                    viewModel.saveDraft("COMPLETION", task.getId(), newDraft));
+
+            currentCompleteDialog.setOnDismissListener(() -> currentCompleteDialog = null);
+
             currentCompleteDialog.setFilePickerLauncher(questionId -> {
                 pendingQuestionId = questionId;
                 filePickerLauncher.launch("*/*");
             });
+
             currentCompleteDialog.show();
         });
     }
@@ -631,7 +660,7 @@ public class TaskDetailFragment extends Fragment {
     private void showAdvanceDialog(String recoveredDraft) {
         currentAdvanceDialog = new TaskAdvanceDialog(getContext(), new TaskAdvanceDialog.OnAdvanceSubmitListener() {
             @Override
-            public void onSubmit(String content, java.util.List<android.net.Uri> files) {
+            public void onSubmit(String content, java.util.List<Uri> files) {
                 viewModel.saveAdvanceOffline(task.getId(), content, files);
                 Toast.makeText(getContext(), "Avance guardado localmente", Toast.LENGTH_SHORT).show();
             }
@@ -639,11 +668,11 @@ public class TaskDetailFragment extends Fragment {
             @Override
             public void onPickFiles() {
                 String[] mimeTypes = {
-                    "image/jpeg", "image/png", "application/pdf",
-                    "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                    "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    "application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                    "application/x-rar-compressed", "application/vnd.rar", "application/octet-stream"
+                        "image/jpeg", "image/png", "application/pdf",
+                        "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        "application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                        "application/x-rar-compressed", "application/vnd.rar", "application/octet-stream"
                 };
                 advanceFilePickerLauncher.launch(mimeTypes);
             }
@@ -653,44 +682,37 @@ public class TaskDetailFragment extends Fragment {
             currentAdvanceDialog.setInitialContent(recoveredDraft);
         }
 
-        currentAdvanceDialog.setOnDraftChangedListener(content -> {
-            viewModel.saveDraft("ADVANCE", task.getId(), content);
-        });
+        currentAdvanceDialog.setOnDraftChangedListener(content ->
+                viewModel.saveDraft("ADVANCE", task.getId(), content));
 
-        currentAdvanceDialog.setOnDismissListener(() -> {
-            currentAdvanceDialog = null;
-        });
-
+        currentAdvanceDialog.setOnDismissListener(() -> currentAdvanceDialog = null);
         currentAdvanceDialog.show();
     }
 
     private void setupObservers() {
         viewModel.getDraft().observe(getViewLifecycleOwner(), draft -> {
-            // Check if task exists before showing dialogs
             if (task == null) return;
 
             if ("ADVANCE".equals(currentDraftType) && currentAdvanceDialog == null) {
                 showAdvanceDialog(draft);
             } else if ("COMPLETION".equals(currentDraftType) && currentCompleteDialog == null) {
-                viewModel.loadQuestions(task.getId(), questions -> {
-                    showCompleteDialog(questions, draft);
-                });
+                viewModel.loadQuestions(task.getId(), questions -> showCompleteDialog(questions, draft));
             }
         });
 
         viewModel.getTaskDetail().observe(getViewLifecycleOwner(), detailedTask -> {
             if (detailedTask == null) {
                 binding.detailTechnicians.setText("Cargando...");
+                binding.techniciansListContainer.removeAllViews();
                 advanceAdapter.setAdvances(new java.util.ArrayList<>());
                 return;
             }
 
             if (this.task == null || detailedTask.getId() == this.task.getId()) {
-                boolean wasRunning = (this.task != null && this.task.isRunning());
+                boolean wasRunning = this.task != null && this.task.isRunning();
                 boolean isNowRunning = detailedTask.isRunning();
-                boolean statusToggled = (wasRunning != isNowRunning);
+                boolean statusToggled = wasRunning != isNowRunning;
 
-                // ACTUALIZACIÓN DE DATOS (Técnicos, Historial, etc)
                 this.task = detailedTask;
                 setupUI();
                 updateUIWithDetails(detailedTask);
@@ -702,20 +724,16 @@ public class TaskDetailFragment extends Fragment {
                     int color = androidx.core.content.ContextCompat.getColor(getContext(), R.color.ans_secondary);
                     binding.btnTimer.setBackgroundTintList(android.content.res.ColorStateList.valueOf(color));
 
-                    // RE-SINC O INICIO: Solo si hubo cambio de estado real.
-                    // Si ya está corriendo (timerRunnable != null), el contador local manda.
                     if (statusToggled || timerRunnable == null) {
                         calculateTimerBaseAndStart();
                     }
                 } else {
-                    // Si está pausado, el servidor tiene la última palabra
                     stopTimer();
                     binding.btnTimer.setText("Iniciar");
                     binding.btnTimer.setIconResource(R.drawable.ic_play_arrow_24);
                     int color = androidx.core.content.ContextCompat.getColor(getContext(), R.color.ans_primary);
                     binding.btnTimer.setBackgroundTintList(android.content.res.ColorStateList.valueOf(color));
                     binding.tvCurrentStartTime.setVisibility(View.GONE);
-
                     binding.tvTotalTime.setText(detailedTask.getTotalTimeSpent());
                 }
             }
@@ -723,19 +741,59 @@ public class TaskDetailFragment extends Fragment {
     }
 
     private void updateUIWithDetails(Task task) {
-        if (task.getAssignedUsers() != null && !task.getAssignedUsers().isEmpty()) {
-            java.util.List<String> names = new java.util.ArrayList<>();
-            for (com.example.app_ans.tasks.model.AssignedUser user : task.getAssignedUsers()) {
-                names.add(user.getName());
-            }
-            String technicians = String.join(", ", names);
-            binding.detailTechnicians.setText(technicians);
-        } else {
+        updateTechniciansDropdown(task);
+
+        advanceAdapter.setAdvances(task.getAdvances() != null
+                ? task.getAdvances()
+                : new java.util.ArrayList<>());
+
+        checkEmptyAdvances();
+    }
+
+    private void updateTechniciansDropdown(Task task) {
+        if (task == null || binding == null) return;
+
+        binding.techniciansListContainer.removeAllViews();
+
+        java.util.List<AssignedUser> users = task.getAssignedUsers();
+
+        if (users == null || users.isEmpty()) {
             binding.detailTechnicians.setText("No asignados");
+            binding.techniciansArrow.setVisibility(View.GONE);
+            binding.techniciansHeader.setOnClickListener(null);
+            binding.techniciansListContainer.setVisibility(View.GONE);
+            return;
         }
 
-        advanceAdapter.setAdvances(task.getAdvances() != null ? task.getAdvances() : new java.util.ArrayList<>());
-        checkEmptyAdvances();
+        int count = users.size();
+        binding.detailTechnicians.setText(
+                count == 1 ? "1 técnico asignado" : count + " técnicos asignados"
+        );
+
+        binding.techniciansArrow.setVisibility(View.VISIBLE);
+        binding.techniciansArrow.setRotation(0f);
+        binding.techniciansListContainer.setVisibility(View.GONE);
+
+        LayoutInflater inflater = LayoutInflater.from(requireContext());
+
+        for (AssignedUser user : users) {
+            View technicianView = inflater.inflate(
+                    R.layout.item_assigned_technician,
+                    binding.techniciansListContainer,
+                    false
+            );
+
+            TextView technicianName = technicianView.findViewById(R.id.technician_name);
+            technicianName.setText(user.getName());
+
+            binding.techniciansListContainer.addView(technicianView);
+        }
+
+        binding.techniciansHeader.setOnClickListener(v -> {
+            boolean isVisible = binding.techniciansListContainer.getVisibility() == View.VISIBLE;
+            binding.techniciansListContainer.setVisibility(isVisible ? View.GONE : View.VISIBLE);
+            binding.techniciansArrow.setRotation(isVisible ? 0f : 90f);
+        });
     }
 
     private void updateTimingUI() {
@@ -749,12 +807,11 @@ public class TaskDetailFragment extends Fragment {
             int color = androidx.core.content.ContextCompat.getColor(getContext(), R.color.ans_secondary);
             binding.btnTimer.setBackgroundTintList(android.content.res.ColorStateList.valueOf(color));
 
-            // Show start time of current cycle
             if (task.getTimeLogs() != null && !task.getTimeLogs().isEmpty()) {
-                com.example.app_ans.tasks.model.Task.TaskTimeLog lastLog = task.getTimeLogs().get(0); // Assuming sorted newest first from backend
+                Task.TaskTimeLog lastLog = task.getTimeLogs().get(0);
                 if (lastLog.getEndTime() == null || lastLog.getEndTime().isEmpty()) {
                     binding.tvCurrentStartTime.setVisibility(View.VISIBLE);
-                    binding.tvCurrentStartTime.setText("Inició: " + com.example.app_ans.core.utils.DateUtils.formatTimeOnly(lastLog.getStartTime()));
+                    binding.tvCurrentStartTime.setText("Inició: " + DateUtils.formatTimeOnly(lastLog.getStartTime()));
                 } else {
                     binding.tvCurrentStartTime.setVisibility(View.GONE);
                 }
@@ -774,10 +831,16 @@ public class TaskDetailFragment extends Fragment {
 
     private void updateTimeLogsHistory() {
         if (binding == null) return;
+
         binding.historyContainer.removeAllViews();
+
         if (task.getTimeLogs() != null && !task.getTimeLogs().isEmpty()) {
             for (Task.TaskTimeLog log : task.getTimeLogs()) {
-                View logView = LayoutInflater.from(getContext()).inflate(R.layout.item_time_log, binding.historyContainer, false);
+                View logView = LayoutInflater.from(getContext()).inflate(
+                        R.layout.item_time_log,
+                        binding.historyContainer,
+                        false
+                );
                 TextView range = logView.findViewById(R.id.tv_log_range);
                 TextView duration = logView.findViewById(R.id.tv_log_duration);
 
@@ -785,6 +848,7 @@ public class TaskDetailFragment extends Fragment {
                 String end = (log.getEndTime() != null && !log.getEndTime().isEmpty())
                         ? DateUtils.formatDateTime(log.getEndTime())
                         : "En progreso...";
+
                 range.setText(start + " - " + end);
                 duration.setText("Duración: " + (log.getDuration() != null ? log.getDuration() : "---"));
 
@@ -801,8 +865,8 @@ public class TaskDetailFragment extends Fragment {
     }
 
     private void fetchCurrentLocation() {
-        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-            ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
             locationPermissionLauncher.launch(new String[]{
                     Manifest.permission.ACCESS_FINE_LOCATION,
@@ -817,9 +881,9 @@ public class TaskDetailFragment extends Fragment {
                     if (location != null) {
                         updateMapWithUserLocation(location.getLatitude(), location.getLongitude());
 
-                        // Calcular distancia a la tarea
-                        if (task != null && task.getContent() != null &&
-                            task.getContent().getLatitude() != null && task.getContent().getLongitude() != null) {
+                        if (task != null && task.getContent() != null
+                                && task.getContent().getLatitude() != null
+                                && task.getContent().getLongitude() != null) {
 
                             float[] results = new float[1];
                             Location.distanceBetween(
@@ -830,7 +894,6 @@ public class TaskDetailFragment extends Fragment {
                             updateDistanceUI(results[0]);
                         }
 
-                        // Save location to backend/local storage
                         if (task != null) {
                             viewModel.recordTechnicianLocation(task.getId(), location.getLatitude(), location.getLongitude());
                         }
@@ -838,9 +901,8 @@ public class TaskDetailFragment extends Fragment {
                         Toast.makeText(getContext(), "No se pudo obtener la ubicación actual", Toast.LENGTH_SHORT).show();
                     }
                 })
-                .addOnFailureListener(e -> {
-                    Toast.makeText(getContext(), "Error al obtener ubicación: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                });
+                .addOnFailureListener(e ->
+                        Toast.makeText(getContext(), "Error al obtener ubicación: " + e.getMessage(), Toast.LENGTH_SHORT).show());
     }
 
     private void updateDistanceUI(float distanceInMeters) {
@@ -861,17 +923,13 @@ public class TaskDetailFragment extends Fragment {
         if (binding == null || binding.mapView == null) return;
 
         GeoPoint userPoint = new GeoPoint(lat, lon);
-
-        // Centrar el mapa en el usuario
         binding.mapView.getController().animateTo(userPoint);
         binding.mapView.getController().setZoom(18.0);
 
-        // Crear o actualizar marcador del usuario
         if (userMarker == null) {
             userMarker = new Marker(binding.mapView);
             userMarker.setTitle("Mi ubicación");
             userMarker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
-            // Color diferente para el técnico
             userMarker.setIcon(getResources().getDrawable(org.osmdroid.library.R.drawable.marker_default_focused_base));
         }
 
@@ -881,13 +939,16 @@ public class TaskDetailFragment extends Fragment {
             binding.mapView.getOverlays().add(userMarker);
         }
 
-        binding.mapView.invalidate(); // Refrescar mapa
+        binding.mapView.invalidate();
     }
 
     private void checkEmptyAdvances() {
         if (binding == null || task == null) return;
+
         boolean hasServer = task.getAdvances() != null && !task.getAdvances().isEmpty();
-        boolean hasPending = (viewModel.getPendingAdvances().getValue() != null && !viewModel.getPendingAdvances().getValue().isEmpty());
+
+        java.util.List<?> pendingAdvances = viewModel.getPendingAdvances().getValue();
+        boolean hasPending = pendingAdvances != null && !pendingAdvances.isEmpty();
 
         if (hasServer || hasPending) {
             binding.advancesRecycler.setVisibility(View.VISIBLE);
@@ -899,12 +960,18 @@ public class TaskDetailFragment extends Fragment {
     }
 
     private void setupVehicleViewModel() {
-        com.example.app_ans.auth.session.AuthSessionManager sessionManager = new com.example.app_ans.auth.session.AuthSessionManager(getContext());
-        com.example.app_ans.vehicles.repository.VehicleRepository repository = new com.example.app_ans.vehicles.repository.VehicleRepository(
-                com.example.app_ans.core.network.NetworkModule.provideVehicleApi(getContext(), sessionManager)
-        );
-        vehicleViewModel = new ViewModelProvider(this, new com.example.app_ans.vehicles.ui.VehicleViewModelFactory(repository))
-                .get(com.example.app_ans.vehicles.ui.VehicleViewModel.class);
+        com.example.app_ans.auth.session.AuthSessionManager sessionManager =
+                new com.example.app_ans.auth.session.AuthSessionManager(getContext());
+
+        com.example.app_ans.vehicles.repository.VehicleRepository repository =
+                new com.example.app_ans.vehicles.repository.VehicleRepository(
+                        com.example.app_ans.core.network.NetworkModule.provideVehicleApi(getContext(), sessionManager)
+                );
+
+        vehicleViewModel = new ViewModelProvider(
+                this,
+                new com.example.app_ans.vehicles.ui.VehicleViewModelFactory(repository)
+        ).get(com.example.app_ans.vehicles.ui.VehicleViewModel.class);
 
         vehicleViewModel.getMaintenanceConfig().observe(getViewLifecycleOwner(), config -> {
             if (config != null && task != null && task.getVehicle() != null) {
@@ -915,7 +982,6 @@ public class TaskDetailFragment extends Fragment {
         vehicleViewModel.getMaintenanceSubmitted().observe(getViewLifecycleOwner(), success -> {
             if (Boolean.TRUE.equals(success)) {
                 Toast.makeText(getContext(), "Mantenimiento reportado correctamente", Toast.LENGTH_SHORT).show();
-                // Refresh task to update vehicle status if needed
                 viewModel.loadTaskDetail(task.getId());
             }
         });
@@ -937,13 +1003,11 @@ public class TaskDetailFragment extends Fragment {
         GeoPoint startPoint = new GeoPoint(lat, lon);
         binding.mapView.getController().setCenter(startPoint);
 
-        // Add Marker for Task Location
         Marker marker = new Marker(binding.mapView);
         marker.setPosition(startPoint);
         marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
         marker.setTitle("Ubicación de la Tarea");
 
-        // We clear overlays but we need to re-add user marker if it exists
         binding.mapView.getOverlays().clear();
         binding.mapView.getOverlays().add(marker);
 
@@ -959,9 +1023,11 @@ public class TaskDetailFragment extends Fragment {
     }
 
     private void showMaintenanceDialog(java.util.Map<String, Object> config) {
-        activeMaintenanceDialog = new com.example.app_ans.vehicles.ui.MaintenanceDialog(getContext(), config, (dataJson, images) -> {
-            submitMaintenance(dataJson, images);
-        });
+        activeMaintenanceDialog = new com.example.app_ans.vehicles.ui.MaintenanceDialog(
+                getContext(),
+                config,
+                (dataJson, images) -> submitMaintenance(dataJson, images)
+        );
 
         activeMaintenanceDialog.setImagePickerLauncher(fieldName -> {
             pendingFieldId = fieldName;
@@ -980,8 +1046,15 @@ public class TaskDetailFragment extends Fragment {
                 java.io.File file = com.example.app_ans.core.utils.FileStorageUtils.fromUri(getContext(), entry.getValue());
                 if (file != null) {
                     java.io.File compressed = com.example.app_ans.core.utils.FileStorageUtils.getCompressedFile(getContext(), file);
-                    okhttp3.RequestBody requestFile = okhttp3.RequestBody.create(compressed, okhttp3.MediaType.parse("image/jpeg"));
-                    imageParts.add(okhttp3.MultipartBody.Part.createFormData("images[" + entry.getKey() + "]", compressed.getName(), requestFile));
+                    okhttp3.RequestBody requestFile = okhttp3.RequestBody.create(
+                            compressed,
+                            okhttp3.MediaType.parse("image/jpeg")
+                    );
+                    imageParts.add(okhttp3.MultipartBody.Part.createFormData(
+                            "images[" + entry.getKey() + "]",
+                            compressed.getName(),
+                            requestFile
+                    ));
                 }
             } catch (Exception e) {
                 android.util.Log.e("TaskDetail", "Error processing image for field: " + entry.getKey(), e);
@@ -989,11 +1062,11 @@ public class TaskDetailFragment extends Fragment {
         }
 
         vehicleViewModel.submitMaintenance(
-            task.getVehicle().getId(),
-            "periodic",
-            task.getVehicle().getOdometer(),
-            dataJson,
-            imageParts
+                task.getVehicle().getId(),
+                "periodic",
+                task.getVehicle().getOdometer(),
+                dataJson,
+                imageParts
         );
     }
 }

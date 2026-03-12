@@ -1,7 +1,13 @@
 package com.example.app_ans;
 
+import android.content.Intent;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -10,18 +16,21 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.app_ans.databinding.ActivityTasksBinding;
-import com.example.app_ans.tasks.ui.TaskAdapter;
-import com.example.app_ans.tasks.ui.TaskDetailFragment;
-import com.example.app_ans.notifications.NotificationViewModel;
 import com.example.app_ans.tasks.model.Task;
+import com.example.app_ans.tasks.ui.TaskAdapter;
+import com.example.app_ans.tasks.ui.TaskDetailActivity;
+import com.example.app_ans.tasks.ui.TaskDetailFragment;
 import com.example.app_ans.tasks.ui.TaskViewModel;
-import android.content.Intent;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class TasksActivity extends AppCompatActivity {
     private ActivityTasksBinding binding;
     private TaskViewModel viewModel;
-    private NotificationViewModel notificationViewModel;
     private TaskAdapter adapter;
     private boolean isTwoPane;
     private int currentTaskCount = 0;
@@ -33,23 +42,40 @@ public class TasksActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(binding.getRoot());
 
-        // Initialize AuthViewModel for logout in Navbar
-        com.example.app_ans.auth.session.AuthSessionManager sessionManager = new com.example.app_ans.auth.session.AuthSessionManager(this);
-        com.example.app_ans.auth.repository.AuthRepository authRepository = new com.example.app_ans.auth.repository.AuthRepository(
-                com.example.app_ans.core.network.NetworkModule.provideAuthApi(this, sessionManager),
-                sessionManager
+        com.example.app_ans.auth.session.AuthSessionManager sessionManager =
+                new com.example.app_ans.auth.session.AuthSessionManager(this);
+
+        com.example.app_ans.auth.repository.AuthRepository authRepository =
+                new com.example.app_ans.auth.repository.AuthRepository(
+                        com.example.app_ans.core.network.NetworkModule.provideAuthApi(this, sessionManager),
+                        sessionManager
+                );
+
+        com.example.app_ans.auth.ui.AuthViewModel authViewModel =
+                new ViewModelProvider(
+                        this,
+                        new com.example.app_ans.auth.ui.AuthViewModelFactory(authRepository)
+                ).get(com.example.app_ans.auth.ui.AuthViewModel.class);
+
+        com.example.app_ans.core.ui.NavbarUtils.setupNavbar(
+                this,
+                "Tareas",
+                () -> authViewModel.logout(this)
         );
-        com.example.app_ans.auth.ui.AuthViewModel authViewModel = new ViewModelProvider(this, new com.example.app_ans.auth.ui.AuthViewModelFactory(authRepository))
-                .get(com.example.app_ans.auth.ui.AuthViewModel.class);
 
-        // Setup Navbar using utility with logout action
-        com.example.app_ans.core.ui.NavbarUtils.setupNavbar(this, "Tareas", this::showNotificationsBottomSheet, () -> authViewModel.logout(this));
+        binding.navbar.navbarBackButton.setVisibility(View.GONE);
+        binding.navbar.navbarTitle.setVisibility(View.GONE);
 
-        // Observe logout result
+        if (binding.backToHome != null) {
+            binding.backToHome.setOnClickListener(v -> finish());
+        }
+
         authViewModel.getLogoutResult().observe(this, success -> {
             if (Boolean.TRUE.equals(success)) {
                 Intent intent = new Intent(this, com.example.app_ans.auth.ui.AuthActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        | Intent.FLAG_ACTIVITY_NEW_TASK
+                        | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();
             }
@@ -62,8 +88,6 @@ public class TasksActivity extends AppCompatActivity {
         setupListeners();
 
         viewModel.loadTasks();
-
-        // Handle possible task selection from notification
         handleIntent(getIntent());
     }
 
@@ -77,26 +101,24 @@ public class TasksActivity extends AppCompatActivity {
     private void handleIntent(Intent intent) {
         if (intent != null && (intent.hasExtra("TASK_ID") || intent.hasExtra("task_id"))) {
             int taskId = intent.getIntExtra("TASK_ID", intent.getIntExtra("task_id", -1));
-            
-            // If it was passed as a String (common in FCM)
+
             if (taskId == -1) {
                 String taskIdStr = intent.getStringExtra("TASK_ID");
                 if (taskIdStr == null) taskIdStr = intent.getStringExtra("task_id");
-                
+
                 if (taskIdStr != null) {
                     try {
                         taskId = Integer.parseInt(taskIdStr);
-                    } catch (NumberFormatException ignored) {}
+                    } catch (NumberFormatException ignored) {
+                    }
                 }
             }
 
             if (taskId != -1) {
-                // Direct redirection to DetailActivity, let it load the task
-                Intent detailIntent = new Intent(this, com.example.app_ans.tasks.ui.TaskDetailActivity.class);
+                Intent detailIntent = new Intent(this, TaskDetailActivity.class);
                 detailIntent.putExtra("TASK_ID", taskId);
                 startActivity(detailIntent);
 
-                // Clear extra to avoid re-processing
                 intent.removeExtra("TASK_ID");
                 intent.removeExtra("task_id");
             }
@@ -115,30 +137,22 @@ public class TasksActivity extends AppCompatActivity {
     }
 
     private void openTaskDetailFull(Task task) {
-        Intent intent = new Intent(this, com.example.app_ans.tasks.ui.TaskDetailActivity.class);
+        Intent intent = new Intent(this, TaskDetailActivity.class);
         intent.putExtra("TASK_DATA", task);
         startActivity(intent);
-    }
-
-    private void showNotificationsBottomSheet() {
-        com.example.app_ans.notifications.NotificationsBottomSheetFragment bottomSheet =
-            new com.example.app_ans.notifications.NotificationsBottomSheetFragment();
-        bottomSheet.show(getSupportFragmentManager(), "notifications_bottom_sheet");
     }
 
     @Override
     protected void onResume() {
         super.onResume();
         if (viewModel != null) viewModel.loadTasks();
-        if (notificationViewModel != null) notificationViewModel.updateUnreadCount();
     }
 
     private void setupRecyclerView() {
-        adapter = new TaskAdapter(task -> openTaskDetail(task));
+        adapter = new TaskAdapter(this::openTaskDetail);
         binding.tasksRecycler.setLayoutManager(new LinearLayoutManager(this));
         binding.tasksRecycler.setAdapter(adapter);
 
-        // Hide banner when clicking it and refresh
         binding.newTasksBanner.setOnClickListener(v -> {
             binding.newTasksBanner.setVisibility(View.GONE);
             binding.tasksRecycler.smoothScrollToPosition(0);
@@ -147,30 +161,45 @@ public class TasksActivity extends AppCompatActivity {
 
     private void setupViewModel() {
         viewModel = new ViewModelProvider(this).get(TaskViewModel.class);
-        notificationViewModel = new ViewModelProvider(this).get(NotificationViewModel.class);
-        
+
         viewModel.getTasks().observe(this, tasks -> {
             int newCount = (tasks != null) ? tasks.size() : 0;
 
             if (tasks == null || tasks.isEmpty()) {
-                adapter.setTasks(java.util.Collections.emptyList());
+                adapter.setTasks(Collections.emptyList());
                 binding.tasksRecycler.setVisibility(View.GONE);
+                binding.completedGroupsContainer.removeAllViews();
+                binding.completedGroupsContainer.setVisibility(View.GONE);
                 binding.emptyView.setVisibility(View.VISIBLE);
                 binding.newTasksBanner.setVisibility(View.GONE);
             } else {
-                // Determine if we should show the "New Tasks" banner
-                // If count increased and we aren't at the very top
                 if (newCount > currentTaskCount && currentTaskCount > 0) {
                     LinearLayoutManager layoutManager = (LinearLayoutManager) binding.tasksRecycler.getLayoutManager();
                     if (layoutManager != null && layoutManager.findFirstVisibleItemPosition() > 0) {
                         binding.newTasksBanner.setVisibility(View.VISIBLE);
                     }
                 }
-                
-                adapter.setTasks(tasks);
-                binding.tasksRecycler.setVisibility(View.VISIBLE);
-                binding.emptyView.setVisibility(View.GONE);
+
+                List<Task> inProcessTasks = new ArrayList<>();
+                List<Task> completedTasks = new ArrayList<>();
+
+                for (Task task : tasks) {
+                    if (isCompleted(task)) {
+                        completedTasks.add(task);
+                    } else {
+                        inProcessTasks.add(task);
+                    }
+                }
+
+                adapter.setTasks(inProcessTasks);
+                binding.tasksRecycler.setVisibility(inProcessTasks.isEmpty() ? View.GONE : View.VISIBLE);
+
+                renderCompletedGroups(completedTasks);
+
+                boolean allEmpty = inProcessTasks.isEmpty() && completedTasks.isEmpty();
+                binding.emptyView.setVisibility(allEmpty ? View.VISIBLE : View.GONE);
             }
+
             currentTaskCount = newCount;
         });
 
@@ -183,19 +212,11 @@ public class TasksActivity extends AppCompatActivity {
                 Toast.makeText(this, "Error: " + error, Toast.LENGTH_LONG).show();
             }
         });
-
-        // Observe notification badge
-        notificationViewModel.getUnreadCount().observe(this, count -> {
-            // Badge is now managed by the widget
-        });
-        notificationViewModel.loadNotifications();
     }
 
     private void setupListeners() {
-        // Set query hint programmatically
         binding.searchBar.searchView.setQueryHint("Buscar por nombre, ID o descripción...");
 
-        // Search bar listener
         binding.searchBar.searchView.setOnQueryTextListener(new androidx.appcompat.widget.SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
@@ -209,5 +230,140 @@ public class TasksActivity extends AppCompatActivity {
                 return true;
             }
         });
+    }
+
+    private boolean isCompleted(Task task) {
+        return task.getStatus() != null
+                && task.getStatus().equalsIgnoreCase("Completado");
+    }
+
+    private String buildGroupKey(Task task) {
+        if (task.getContent() != null && task.getContent().getSubWorkOrderId() != null) {
+            return "SOT-" + task.getContent().getSubWorkOrderId();
+        }
+        return "Tareas completadas";
+    }
+
+    private Map<String, List<Task>> groupCompletedTasks(List<Task> completedTasks) {
+        Map<String, List<Task>> grouped = new LinkedHashMap<>();
+
+        for (Task task : completedTasks) {
+            String key = buildGroupKey(task);
+
+            if (!grouped.containsKey(key)) {
+                grouped.put(key, new ArrayList<>());
+            }
+
+            grouped.get(key).add(task);
+        }
+
+        return grouped;
+    }
+
+    private void renderCompletedGroups(List<Task> completedTasks) {
+        binding.completedGroupsContainer.removeAllViews();
+
+        if (completedTasks == null || completedTasks.isEmpty()) {
+            binding.completedGroupsContainer.setVisibility(View.GONE);
+            return;
+        }
+
+        binding.completedGroupsContainer.setVisibility(View.VISIBLE);
+
+        Map<String, List<Task>> grouped = groupCompletedTasks(completedTasks);
+
+        for (Map.Entry<String, List<Task>> entry : grouped.entrySet()) {
+            View groupView = getLayoutInflater().inflate(
+                    R.layout.item_completed_group,
+                    binding.completedGroupsContainer,
+                    false
+            );
+
+            TextView countView = groupView.findViewById(R.id.completed_count);
+            TextView titleView = groupView.findViewById(R.id.completed_title);
+            TextView keyView = groupView.findViewById(R.id.completed_group_key);
+            ImageView arrowView = groupView.findViewById(R.id.completed_arrow);
+            LinearLayout itemsContainer = groupView.findViewById(R.id.completed_items_container);
+            View header = groupView.findViewById(R.id.completed_header);
+
+            List<Task> groupTasks = entry.getValue();
+
+            countView.setText(String.valueOf(groupTasks.size()));
+            titleView.setText("Tareas Completadas");
+            keyView.setText(entry.getKey());
+
+            itemsContainer.setVisibility(View.GONE);
+
+            for (Task task : groupTasks) {
+                View taskItem = getLayoutInflater().inflate(
+                        R.layout.item_task,
+                        itemsContainer,
+                        false
+                );
+
+                bindCompletedTaskItem(taskItem, task);
+                itemsContainer.addView(taskItem);
+            }
+
+            header.setOnClickListener(v -> {
+                if (itemsContainer.getVisibility() == View.VISIBLE) {
+                    itemsContainer.setVisibility(View.GONE);
+                    arrowView.animate().rotation(0f).setDuration(180).start();
+                } else {
+                    itemsContainer.setVisibility(View.VISIBLE);
+                    arrowView.animate().rotation(180f).setDuration(180).start();
+                }
+            });
+
+            binding.completedGroupsContainer.addView(groupView);
+        }
+    }
+
+    private void bindCompletedTaskItem(View itemView, Task task) {
+        TextView taskId = itemView.findViewById(R.id.task_id);
+        TextView taskName = itemView.findViewById(R.id.task_name);
+        TextView taskDate = itemView.findViewById(R.id.task_date);
+        TextView taskDescription = itemView.findViewById(R.id.task_description);
+        TextView vehiclePlate = itemView.findViewById(R.id.vehicle_plate);
+        TextView advancesCount = itemView.findViewById(R.id.advances_count);
+        TextView statusChip = itemView.findViewById(R.id.status_chip);
+
+        taskId.setText(task.getPublicId() != null ? task.getPublicId() : "Sin ID");
+
+        String name = task.getContent() != null && task.getContent().getName() != null
+                ? task.getContent().getName()
+                : "Sin nombre";
+        taskName.setText(name);
+
+        String start = task.getContent() != null && task.getContent().getStartTime() != null
+                ? task.getContent().getStartTime()
+                : "-";
+        String end = task.getContent() != null && task.getContent().getEndTime() != null
+                ? task.getContent().getEndTime()
+                : "-";
+        taskDate.setText("Inicio: " + start + "\nFin: " + end);
+
+        if (task.getContent() != null && task.getContent().getDescription() != null
+                && !task.getContent().getDescription().trim().isEmpty()) {
+            taskDescription.setVisibility(View.VISIBLE);
+            taskDescription.setText(task.getContent().getDescription());
+        } else {
+            taskDescription.setVisibility(View.GONE);
+        }
+
+        if (task.getVehiclePlate() != null && !task.getVehiclePlate().trim().isEmpty()) {
+            vehiclePlate.setVisibility(View.VISIBLE);
+            vehiclePlate.setText("Vehículo asignado: " + task.getVehiclePlate());
+        } else {
+            vehiclePlate.setVisibility(View.GONE);
+        }
+
+        advancesCount.setVisibility(View.GONE);
+
+        statusChip.setText("Completado");
+        statusChip.setBackgroundTintList(ColorStateList.valueOf(Color.parseColor("#4CAF50")));
+        statusChip.setTextColor(getResources().getColor(android.R.color.white));
+
+        itemView.setOnClickListener(v -> openTaskDetail(task));
     }
 }

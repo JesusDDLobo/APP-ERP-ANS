@@ -1,27 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:paddingStart="10dp"
+    android:paddingTop="6dp"
+    android:paddingEnd="10dp"
+    android:paddingBottom="10dp"
+    android:background="@android:color/transparent">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:background="@drawable/bg_notifications_header"
+        android:elevation="6dp"
         android:gravity="center_vertical"
-        android:layout_marginBottom="16dp">
+        android:orientation="horizontal"
+        android:paddingStart="14dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="12dp">
 
-        <ImageButton
-            android:id="@+id/btn_close_notifications"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@drawable/back_arrow"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="12dp"
-            android:scaleType="centerInside"
-            android:layout_marginEnd="8dp"
-            android:contentDescription="Cerrar" />
+        <ImageView
+            android:id="@+id/header_notification_icon"
+            android:layout_width="18dp"
+            android:layout_height="18dp"
+            android:layout_marginEnd="10dp"
+            android:contentDescription="Notificaciones"
+            android:src="@drawable/ic_notification"
+            app:tint="@android:color/white" />
 
         <TextView
             android:id="@+id/notification_count"
@@ -29,30 +37,48 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Notificaciones"
+            android:textColor="@android:color/white"
             android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="@android:color/black" />
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/notification_badge_header"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:background="@drawable/bg_notification_badge"
+            android:gravity="center"
+            android:text="3"
+            android:textColor="@android:color/white"
+            android:textSize="12sp"
+            android:textStyle="bold" />
     </LinearLayout>
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="@android:color/darker_gray"
-        android:layout_marginBottom="16dp" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/notifications_recycler"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:nestedScrollingEnabled="false" />
+        android:layout_marginTop="-2dp"
+        android:background="@drawable/bg_notifications_body"
+        android:elevation="8dp"
+        android:orientation="vertical"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp">
 
-    <TextView
-        android:id="@+id/empty_view"
-        android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:gravity="center"
-        android:text="No hay notificaciones"
-        android:textSize="16sp"
-        android:textColor="@android:color/darker_gray"
-        android:visibility="gone" />
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/notifications_recycler"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:clipToPadding="false"
+            android:nestedScrollingEnabled="false" />
+
+        <TextView
+            android:id="@+id/empty_view"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:gravity="center"
+            android:text="No hay notificaciones"
+            android:textColor="#9E9E9E"
+            android:textSize="16sp"
+            android:visibility="gone" />
+    </LinearLayout>
+
 </LinearLayout>

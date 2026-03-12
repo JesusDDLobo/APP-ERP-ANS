@@ -2,9 +2,11 @@ package com.example.app_ans.vehicles.ui;
 
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.OpenableColumns;
+import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
@@ -13,8 +15,6 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.bumptech.glide.Glide;
@@ -22,12 +22,11 @@ import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.Target;
-import android.graphics.drawable.Drawable;
-import android.util.Log;
-
 import com.example.app_ans.R;
 import com.example.app_ans.auth.session.AuthSessionManager;
+import com.example.app_ans.auth.ui.AuthActivity;
 import com.example.app_ans.core.network.NetworkModule;
+import com.example.app_ans.core.ui.NavbarUtils;
 import com.example.app_ans.core.utils.FileStorageUtils;
 import com.example.app_ans.databinding.ActivityVehicleDetailBinding;
 import com.example.app_ans.vehicles.model.Vehicle;
@@ -43,6 +42,7 @@ import okhttp3.MultipartBody;
 import okhttp3.RequestBody;
 
 public class VehicleDetailActivity extends AppCompatActivity {
+
     private ActivityVehicleDetailBinding binding;
     private VehicleViewModel viewModel;
     private Vehicle currentVehicle;
@@ -57,7 +57,7 @@ public class VehicleDetailActivity extends AppCompatActivity {
                     for (Uri uri : uris) {
                         if (FileStorageUtils.isValidFile(this, uri)) {
                             firstValidUri = uri;
-                            break; // Maintenance dialog currently handles one file per field
+                            break;
                         } else {
                             Toast.makeText(this, "Archivo no permitido: " + FileStorageUtils.getFileName(this, uri), Toast.LENGTH_SHORT).show();
                         }
@@ -83,21 +83,29 @@ public class VehicleDetailActivity extends AppCompatActivity {
         setupViewModel();
         observeViewModel();
 
+        if (binding.backToHome != null) {
+            binding.backToHome.setOnClickListener(v -> finish());
+        }
+
         viewModel.loadMyVehicle();
     }
 
     private void setupNavbar() {
-        View navbar = binding.navbar.getRoot();
-        ViewCompat.setOnApplyWindowInsetsListener(navbar, (v, insets) -> {
-            int statusBarHeight = insets.getInsets(WindowInsetsCompat.Type.systemBars()).top;
-            v.setPadding(0, statusBarHeight, 0, 0);
-            return insets;
-        });
+        NavbarUtils.setupNavbar(
+                this,
+                null,
+                () -> {
+                    Intent intent = new Intent(this, AuthActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
+                            | Intent.FLAG_ACTIVITY_NEW_TASK
+                            | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
+                }
+        );
 
-        binding.navbar.navbarTitle.setText("Detalle de Vehículo");
-        binding.navbar.navbarTitle.setVisibility(View.VISIBLE);
-        binding.navbar.navbarBackButton.setVisibility(View.VISIBLE);
-        binding.navbar.navbarBackButton.setOnClickListener(v -> finish());
+        binding.navbar.navbarTitle.setVisibility(View.GONE);
+        binding.navbar.navbarBackButton.setVisibility(View.GONE);
     }
 
     private void setupViewModel() {
@@ -110,9 +118,9 @@ public class VehicleDetailActivity extends AppCompatActivity {
     }
 
     private void observeViewModel() {
-        viewModel.getLoading().observe(this, loading -> {
-            binding.loadingProgress.setVisibility(loading ? View.VISIBLE : View.GONE);
-        });
+        viewModel.getLoading().observe(this, loading ->
+                binding.loadingProgress.setVisibility(loading ? View.VISIBLE : View.GONE)
+        );
 
         viewModel.getError().observe(this, error -> {
             if (error != null) {
@@ -167,10 +175,10 @@ public class VehicleDetailActivity extends AppCompatActivity {
 
             if (status.isDue()) {
                 binding.maintenanceDueStatus.setText("¡Mantenimiento Vencido!");
-                binding.maintenanceDueStatus.setTextColor(getResources().getColor(com.example.app_ans.R.color.ans_secondary));
+                binding.maintenanceDueStatus.setTextColor(getResources().getColor(R.color.ans_secondary));
             } else {
                 binding.maintenanceDueStatus.setText("Al día");
-                binding.maintenanceDueStatus.setTextColor(getResources().getColor(com.example.app_ans.R.color.ans_primary));
+                binding.maintenanceDueStatus.setTextColor(getResources().getColor(R.color.ans_primary));
             }
 
             binding.maintenanceNextDue.setText(String.format("Próximo: %.1f Km", status.getNextDueKms()));
@@ -178,9 +186,7 @@ public class VehicleDetailActivity extends AppCompatActivity {
 
             if (status.isCanFill()) {
                 binding.maintenanceButton.setVisibility(View.VISIBLE);
-                binding.maintenanceButton.setOnClickListener(v -> {
-                    viewModel.loadMaintenanceConfig("periodic");
-                });
+                binding.maintenanceButton.setOnClickListener(v -> viewModel.loadMaintenanceConfig("periodic"));
             } else {
                 binding.maintenanceButton.setVisibility(View.GONE);
             }
@@ -204,13 +210,12 @@ public class VehicleDetailActivity extends AppCompatActivity {
 
             final String imageUrl = processedUrl;
 
-            // Log the URL to help debug image issues
             Log.d("VehicleDetail", "Loading image: " + imageUrl);
 
             Glide.with(this)
                     .load(imageUrl)
-                    .placeholder(com.example.app_ans.R.drawable.vehicle)
-                    .error(com.example.app_ans.R.drawable.vehicle)
+                    .placeholder(R.drawable.vehicle)
+                    .error(R.drawable.vehicle)
                     .listener(new RequestListener<Drawable>() {
                         @Override
                         public boolean onLoadFailed(@Nullable GlideException e, Object model, Target<Drawable> target, boolean isFirstResource) {
@@ -226,27 +231,31 @@ public class VehicleDetailActivity extends AppCompatActivity {
                     })
                     .into(binding.vehicleImage);
         } else {
-            binding.vehicleImage.setImageResource(com.example.app_ans.R.drawable.vehicle);
+            binding.vehicleImage.setImageResource(R.drawable.vehicle);
         }
     }
 
     private void showMaintenanceDialog(Map<String, Object> config) {
         activeMaintenanceDialog = new MaintenanceDialog(this, config, (dataJson, images) -> {
             List<MultipartBody.Part> imageParts = new ArrayList<>();
+
             for (Map.Entry<String, Uri> entry : images.entrySet()) {
                 try {
                     File file = FileStorageUtils.fromUri(this, entry.getValue());
                     if (file != null) {
                         File compressed = FileStorageUtils.getCompressedFile(this, file);
                         RequestBody requestFile = RequestBody.create(compressed, MediaType.parse("image/*"));
-                        // The API expects images keyed by the field name: images[field_name]
-                        imageParts.add(MultipartBody.Part.createFormData("images[" + entry.getKey() + "]", compressed.getName(), requestFile));
+                        imageParts.add(MultipartBody.Part.createFormData(
+                                "images[" + entry.getKey() + "]",
+                                compressed.getName(),
+                                requestFile
+                        ));
                     }
                 } catch (Exception e) {
                     Log.e("VehicleDetail", "Error processing image for field " + entry.getKey(), e);
                 }
             }
-            // Pass current vehicle odometer since it's removed from the dialog
+
             double odometer = currentVehicle != null ? currentVehicle.getOdometer() : 0.0;
             viewModel.submitMaintenance(currentVehicle.getId(), "periodic", odometer, dataJson, imageParts);
         });
@@ -268,19 +277,25 @@ public class VehicleDetailActivity extends AppCompatActivity {
 
     private String getFileName(Uri uri) {
         String result = null;
-        if (uri.getScheme().equals("content")) {
+        if ("content".equals(uri.getScheme())) {
             try (Cursor cursor = getContentResolver().query(uri, null, null, null, null)) {
                 if (cursor != null && cursor.moveToFirst()) {
                     int colIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
-                    if (colIndex != -1) result = cursor.getString(colIndex);
+                    if (colIndex != -1) {
+                        result = cursor.getString(colIndex);
+                    }
                 }
             }
         }
+
         if (result == null) {
             result = uri.getPath();
-            int cut = result.lastIndexOf('/');
-            if (cut != -1) result = result.substring(cut + 1);
+            int cut = result != null ? result.lastIndexOf('/') : -1;
+            if (cut != -1) {
+                result = result.substring(cut + 1);
+            }
         }
+
         return result;
     }
 }

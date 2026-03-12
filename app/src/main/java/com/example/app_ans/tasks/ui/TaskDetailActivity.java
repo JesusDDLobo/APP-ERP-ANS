@@ -1,6 +1,8 @@
 package com.example.app_ans.tasks.ui;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -8,11 +10,9 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.app_ans.R;
 import com.example.app_ans.tasks.model.Task;
-import com.example.app_ans.notifications.NotificationViewModel;
 
 public class TaskDetailActivity extends AppCompatActivity {
     private Task task;
-    private NotificationViewModel notificationViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -20,82 +20,105 @@ public class TaskDetailActivity extends AppCompatActivity {
         androidx.activity.EdgeToEdge.enable(this);
         setContentView(R.layout.activity_task_detail);
 
-        // Initialize AuthViewModel for logout
-        com.example.app_ans.auth.session.AuthSessionManager sessionManager = new com.example.app_ans.auth.session.AuthSessionManager(this);
-        com.example.app_ans.auth.repository.AuthRepository authRepository = new com.example.app_ans.auth.repository.AuthRepository(
-                com.example.app_ans.core.network.NetworkModule.provideAuthApi(this, sessionManager),
-                sessionManager
-        );
-        com.example.app_ans.auth.ui.AuthViewModel authViewModel = new ViewModelProvider(this, new com.example.app_ans.auth.ui.AuthViewModelFactory(authRepository))
-                .get(com.example.app_ans.auth.ui.AuthViewModel.class);
-
-        notificationViewModel = new ViewModelProvider(this).get(NotificationViewModel.class);
-
         handleIntent(getIntent(), savedInstanceState);
     }
 
     @Override
-    protected void onNewIntent(android.content.Intent intent) {
+    protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
         handleIntent(intent, null);
     }
 
-    private void handleIntent(android.content.Intent intent, Bundle savedInstanceState) {
-        if (intent != null) {
-            TaskDetailFragment fragment = null;
-            String title = "Detalle";
+    private void handleIntent(Intent intent, Bundle savedInstanceState) {
+        if (intent == null) return;
 
-            if (intent.hasExtra("TASK_DATA")) {
-                task = (Task) intent.getSerializableExtra("TASK_DATA");
-                title = task != null ? task.getPublicId() : "Detalle";
-                fragment = TaskDetailFragment.newInstance(task);
-            } else if (intent.hasExtra("TASK_ID") || intent.hasExtra("task_id")) {
-                int taskId = intent.getIntExtra("TASK_ID", intent.getIntExtra("task_id", -1));
-                
-                // If it was passed as a String
-                if (taskId == -1) {
-                    String taskIdStr = intent.getStringExtra("TASK_ID");
-                    if (taskIdStr == null) taskIdStr = intent.getStringExtra("task_id");
-                    
-                    if (taskIdStr != null) {
-                        try {
-                            taskId = Integer.parseInt(taskIdStr);
-                        } catch (NumberFormatException ignored) {}
-                    }
+        TaskDetailFragment fragment = null;
+
+        if (intent.hasExtra("TASK_DATA")) {
+            task = (Task) intent.getSerializableExtra("TASK_DATA");
+            fragment = TaskDetailFragment.newInstance(task);
+        } else if (intent.hasExtra("TASK_ID") || intent.hasExtra("task_id")) {
+            int taskId = intent.getIntExtra("TASK_ID", intent.getIntExtra("task_id", -1));
+
+            if (taskId == -1) {
+                String taskIdStr = intent.getStringExtra("TASK_ID");
+                if (taskIdStr == null) {
+                    taskIdStr = intent.getStringExtra("task_id");
                 }
 
-                if (taskId != -1) {
-                    fragment = TaskDetailFragment.newInstance(taskId);
+                if (taskIdStr != null) {
+                    try {
+                        taskId = Integer.parseInt(taskIdStr);
+                    } catch (NumberFormatException ignored) {
+                    }
                 }
             }
 
-            if (fragment != null) {
-                // Setup Navbar using utility with logout
-                com.example.app_ans.core.ui.NavbarUtils.setupNavbar(this, title, this::showNotificationsBottomSheet, null);
+            if (taskId != -1) {
+                fragment = TaskDetailFragment.newInstance(taskId);
+            }
+        }
 
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.fragment_container, fragment)
-                        .commit();
-            } else if (savedInstanceState == null) {
+        if (fragment == null) {
+            if (savedInstanceState == null) {
                 Toast.makeText(this, "Error cargando la tarea", Toast.LENGTH_SHORT).show();
                 finish();
             }
+            return;
         }
+
+        setupNavbar();
+
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .commit();
     }
 
+    private void setupNavbar() {
+        com.example.app_ans.auth.session.AuthSessionManager sessionManager =
+                new com.example.app_ans.auth.session.AuthSessionManager(this);
 
-    private void showNotificationsBottomSheet() {
-        com.example.app_ans.notifications.NotificationsBottomSheetFragment bottomSheet =
-                new com.example.app_ans.notifications.NotificationsBottomSheetFragment();
-        bottomSheet.show(getSupportFragmentManager(), "notifications_bottom_sheet");
-    }
+        com.example.app_ans.auth.repository.AuthRepository authRepository =
+                new com.example.app_ans.auth.repository.AuthRepository(
+                        com.example.app_ans.core.network.NetworkModule.provideAuthApi(this, sessionManager),
+                        sessionManager
+                );
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (notificationViewModel != null) {
-            notificationViewModel.updateUnreadCount();
+        com.example.app_ans.auth.ui.AuthViewModel authViewModel =
+                new ViewModelProvider(
+                        this,
+                        new com.example.app_ans.auth.ui.AuthViewModelFactory(authRepository)
+                ).get(com.example.app_ans.auth.ui.AuthViewModel.class);
+
+        com.example.app_ans.core.ui.NavbarUtils.setupNavbar(
+                this,
+                null,
+                () -> authViewModel.logout(this)
+        );
+
+        View navbarBackButton = findViewById(R.id.navbar_back_button);
+        if (navbarBackButton != null) {
+            navbarBackButton.setVisibility(View.GONE);
         }
+
+        View navbarTitle = findViewById(R.id.navbar_title);
+        if (navbarTitle != null) {
+            navbarTitle.setVisibility(View.GONE);
+        }
+
+        authViewModel.getLogoutResult().observe(this, success -> {
+            if (Boolean.TRUE.equals(success)) {
+                Intent logoutIntent = new Intent(this, com.example.app_ans.auth.ui.AuthActivity.class);
+                logoutIntent.addFlags(
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP
+                                | Intent.FLAG_ACTIVITY_NEW_TASK
+                                | Intent.FLAG_ACTIVITY_CLEAR_TASK
+                );
+                startActivity(logoutIntent);
+                finish();
+            }
+        });
     }
 }

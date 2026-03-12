@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
-    android:layout_marginHorizontal="2dp"
+    android:layout_marginBottom="14dp"
+    app:cardBackgroundColor="@android:color/white"
     app:cardCornerRadius="16dp"
-    app:cardElevation="4dp"
-    android:backgroundTint="@color/white">
+    app:cardElevation="5dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
@@ -16,118 +16,130 @@
 
         <androidx.cardview.widget.CardView
             android:id="@+id/icon_container"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            app:cardCornerRadius="12dp"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            app:cardBackgroundColor="@color/ans_gray_1"
+            app:cardCornerRadius="10dp"
             app:cardElevation="0dp"
-            android:backgroundTint="@color/ans_primary_transparent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
             <ImageView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:padding="12dp"
+                android:padding="10dp"
                 android:src="@drawable/tasks"
-                app:tint="@color/ans_primary" />
+                app:tint="@color/ans_gray_3" />
         </androidx.cardview.widget.CardView>
 
         <TextView
             android:id="@+id/task_id"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:text="TK-0000"
+            android:layout_marginStart="12dp"
+            android:text="TK-0017"
             android:textColor="@color/ans_secondary"
-            android:textSize="12sp"
+            android:textSize="13sp"
             android:textStyle="bold"
             app:layout_constraintStart_toEndOf="@id/icon_container"
-            app:layout_constraintTop_toTopOf="@id/icon_container" />
-
-        <TextView
-            android:id="@+id/task_date"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="8dp"
-            android:text="00/00/0000 - 00/00/0000"
-            android:textColor="@color/ans_gray_3"
-            android:textSize="11sp"
-            android:ellipsize="end"
-            android:maxLines="1"
-            app:layout_constraintBaseline_toBaselineOf="@id/task_id"
-            app:layout_constraintEnd_toStartOf="@id/status_chip"
-            app:layout_constraintStart_toEndOf="@id/task_id" />
+            app:layout_constraintTop_toTopOf="@id/icon_container"
+            tools:ignore="HardcodedText" />
 
         <TextView
             android:id="@+id/task_name"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Nombre de la Tarea"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:text="ERP2"
             android:textColor="@color/ans_primary_dark"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:ellipsize="end"
-            android:maxLines="1"
-            app:layout_constraintEnd_toStartOf="@id/status_chip"
-            app:layout_constraintStart_toStartOf="@id/task_id"
-            app:layout_constraintTop_toBottomOf="@id/task_id" />
+            app:layout_constraintBaseline_toBaselineOf="@id/task_id"
+            app:layout_constraintStart_toEndOf="@id/task_id"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:ignore="HardcodedText" />
+
+        <TextView
+            android:id="@+id/task_date"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="8dp"
+            android:text="Inicio: 17/03/2026, 15:49&#10;Fin: 17/03/2026, 16:49"
+            android:textColor="@color/ans_gray_3"
+            android:textSize="13sp"
+            app:layout_constraintStart_toEndOf="@id/icon_container"
+            app:layout_constraintTop_toBottomOf="@id/task_id"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:ignore="HardcodedText" />
 
         <TextView
             android:id="@+id/task_description"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Descripción de la tarea..."
-            android:textColor="@color/ans_gray_3"
-            android:textSize="12sp"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="8dp"
             android:ellipsize="end"
             android:maxLines="2"
+            android:text="Descripción de la tarea..."
+            android:textColor="@color/ans_gray_3"
+            android:textSize="13sp"
+            android:visibility="gone"
+            app:layout_constraintStart_toEndOf="@id/icon_container"
+            app:layout_constraintTop_toBottomOf="@id/task_date"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="@id/task_name"
-            app:layout_constraintTop_toBottomOf="@id/task_name" />
+            tools:ignore="HardcodedText" />
 
         <TextView
             android:id="@+id/vehicle_plate"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Vehículo asignado: ABC-123"
-            android:textColor="@color/ans_primary"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:visibility="gone"
-            android:gravity="center_vertical"
-            app:layout_constraintStart_toStartOf="@id/task_id"
-            app:layout_constraintTop_toBottomOf="@id/task_description" />
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="8dp"
+            android:text="Vehículo asignado: HWK520"
+            android:textColor="@color/ans_gray_3"
+            android:textSize="13sp"
+            android:textStyle="normal"
+            android:visibility="visible"
+            app:layout_constraintStart_toEndOf="@id/icon_container"
+            app:layout_constraintTop_toBottomOf="@id/task_date"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:ignore="HardcodedText" />
 
         <TextView
             android:id="@+id/advances_count"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="8dp"
             android:text="0 avances"
             android:textColor="@color/ans_secondary"
             android:textSize="11sp"
             android:textStyle="italic"
             android:visibility="gone"
-            app:layout_constraintStart_toStartOf="@id/task_id"
-            app:layout_constraintTop_toBottomOf="@id/vehicle_plate" />
+            app:layout_constraintStart_toEndOf="@id/icon_container"
+            app:layout_constraintTop_toBottomOf="@id/vehicle_plate"
+            tools:ignore="HardcodedText" />
 
         <TextView
             android:id="@+id/status_chip"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="10dp"
             android:background="@drawable/bg_status_chip"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="4dp"
+            android:paddingHorizontal="10dp"
+            android:paddingVertical="5dp"
             android:text="En proceso"
-            android:textColor="@color/white"
-            android:textSize="10sp"
+            android:textColor="@android:color/white"
+            android:textSize="11sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/task_id" />
+            app:layout_constraintStart_toEndOf="@id/icon_container"
+            app:layout_constraintTop_toBottomOf="@id/vehicle_plate"
+            tools:ignore="HardcodedText" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>

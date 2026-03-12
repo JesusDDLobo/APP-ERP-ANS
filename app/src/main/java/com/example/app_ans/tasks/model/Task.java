@@ -87,10 +87,13 @@ public class Task implements Serializable {
 
     public static class TaskTimeLog implements Serializable {
         private int id;
+
         @SerializedName("start_time")
         private String startTime;
+
         @SerializedName("end_time")
         private String endTime;
+
         private String duration;
 
         public int getId() { return id; }
@@ -101,8 +104,10 @@ public class Task implements Serializable {
 
     public static class PreviousTask implements Serializable {
         private int id;
+
         @SerializedName("public_id")
         private String publicId;
+
         public int getId() { return id; }
         public String getPublicId() { return publicId; }
     }
@@ -118,14 +123,21 @@ public class Task implements Serializable {
     public static class TaskContent implements Serializable {
         private String name;
         private String description;
+
         @SerializedName("start_time")
         private String startTime;
+
         @SerializedName("end_time")
         private String endTime;
+
         @SerializedName("vehicle_id")
         private Integer vehicleId;
+
         private Double latitude;
         private Double longitude;
+
+        @SerializedName("sub_work_order_id")
+        private Integer subWorkOrderId;
 
         public String getName() { return name; }
         public String getDescription() { return description; }
@@ -134,5 +146,6 @@ public class Task implements Serializable {
         public Integer getVehicleId() { return vehicleId; }
         public Double getLatitude() { return latitude; }
         public Double getLongitude() { return longitude; }
+        public Integer getSubWorkOrderId() { return subWorkOrderId; }
     }
 }
