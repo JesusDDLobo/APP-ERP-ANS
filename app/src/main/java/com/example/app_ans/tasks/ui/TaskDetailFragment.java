@@ -169,23 +169,22 @@ public class TaskDetailFragment extends Fragment {
         viewModel = new ViewModelProvider(requireActivity()).get(TaskViewModel.class);
         setupVehicleViewModel();
         setupBackNavigation();
+        setupRecyclerView();
+        setupListeners();
+        setupObservers();
+
+        viewModel.loadTasks();
 
         if (getArguments() != null) {
             if (getArguments().containsKey("TASK_DATA")) {
                 task = (Task) getArguments().getSerializable("TASK_DATA");
                 setupUI();
-                setupRecyclerView();
-                setupListeners();
-                setupObservers();
 
                 viewModel.loadTaskDetail(task.getId());
                 viewModel.loadPendingAdvances(task.getId());
                 viewModel.observeUploadStatus(task.getId(), getViewLifecycleOwner());
             } else if (getArguments().containsKey("TASK_ID")) {
                 int taskId = getArguments().getInt("TASK_ID");
-                setupRecyclerView();
-                setupListeners();
-                setupObservers();
 
                 viewModel.loadTaskDetail(taskId);
                 viewModel.loadPendingAdvances(taskId);
@@ -198,6 +197,8 @@ public class TaskDetailFragment extends Fragment {
     public void onResume() {
         super.onResume();
         binding.mapView.onResume();
+
+        viewModel.loadTasks();
 
         if (task != null) {
             if (task.isRunning()) {
@@ -529,14 +530,58 @@ public class TaskDetailFragment extends Fragment {
         }
     }
 
+    private boolean hasAnotherRunningTask() {
+        if (viewModel == null || task == null) return false;
+
+        java.util.List<Task> tasks = viewModel.getTasks().getValue();
+        if (tasks == null || tasks.isEmpty()) return false;
+
+        for (Task item : tasks) {
+            if (item != null && item.getId() != task.getId() && item.isRunning()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void showTaskBlockedDialog() {
+        if (getContext() == null) return;
+
+        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_task_blocked, null);
+
+        TextView tvMessage = dialogView.findViewById(R.id.tvDialogMessage);
+        TextView btnOk = dialogView.findViewById(R.id.btnDialogOk);
+
+        tvMessage.setText("Ya tienes otra tarea en curso. Debes finalizarla o pausarla antes de iniciar una nueva.");
+
+        AlertDialog dialog = new AlertDialog.Builder(getContext())
+                .setView(dialogView)
+                .create();
+
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+        }
+
+        btnOk.setOnClickListener(v -> dialog.dismiss());
+
+        dialog.show();
+    }
+
     private void handleTimerClick() {
         if (task == null) return;
 
         if (task.isRunning()) {
             viewModel.toggleTimer(task.getId(), binding.tvTotalTime.getText().toString());
-        } else {
-            validateLocationAndStartTask();
+            return;
         }
+
+        if (hasAnotherRunningTask()) {
+            showTaskBlockedDialog();
+            return;
+        }
+
+        validateLocationAndStartTask();
     }
 
     private void validateLocationAndStartTask() {
@@ -830,7 +875,7 @@ public class TaskDetailFragment extends Fragment {
     }
 
     private void updateTimeLogsHistory() {
-        if (binding == null) return;
+        if (binding == null || task == null) return;
 
         binding.historyContainer.removeAllViews();
 
