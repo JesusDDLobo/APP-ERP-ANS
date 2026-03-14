@@ -86,8 +86,6 @@ public class TasksActivity extends AppCompatActivity {
         setupRecyclerView();
         setupViewModel();
         setupListeners();
-
-        viewModel.loadTasks();
         handleIntent(getIntent());
     }
 
