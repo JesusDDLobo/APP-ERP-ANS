@@ -4,6 +4,7 @@ import com.example.app_ans.BuildConfig;
 import com.example.app_ans.auth.network.AuthApi;
 import com.example.app_ans.auth.network.TokenInterceptor;
 import com.example.app_ans.auth.session.AuthSessionManager;
+import com.example.app_ans.hotels.network.HotelApi;
 import com.example.app_ans.vehicles.network.VehicleApi;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -107,6 +108,10 @@ public final class NetworkModule {
 
     public static VehicleApi provideVehicleApi(Context context, AuthSessionManager sessionManager) {
         return provideRetrofit(context, sessionManager).create(VehicleApi.class);
+    }
+
+    public static HotelApi provideHotelApi(Context context, AuthSessionManager sessionManager) {
+        return provideRetrofit(context, sessionManager).create(HotelApi.class);
     }
 
     public static com.example.app_ans.tasks.network.TaskApi provideTaskApi(Context context, AuthSessionManager sessionManager) {
