@@ -7,16 +7,15 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.example.app_ans.BuildConfig;
 import com.example.app_ans.auth.model.UserSession;
 import com.example.app_ans.auth.repository.AuthRepository;
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.example.app_ans.BuildConfig;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /** ViewModel that orchestrates login flows without Kotlin coroutines. */
 public class AuthViewModel extends ViewModel {
@@ -24,6 +23,7 @@ public class AuthViewModel extends ViewModel {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     private final MutableLiveData<UserSession> sessionLiveData = new MutableLiveData<>();
+    private final MutableLiveData<UserSession> refreshSessionLiveData = new MutableLiveData<>();
     private final MutableLiveData<String> errorLiveData = new MutableLiveData<>();
     private final MutableLiveData<Boolean> loadingLiveData = new MutableLiveData<>(false);
     private final MutableLiveData<Boolean> logoutLiveData = new MutableLiveData<>();
@@ -36,6 +36,10 @@ public class AuthViewModel extends ViewModel {
 
     public LiveData<UserSession> getSession() {
         return sessionLiveData;
+    }
+
+    public LiveData<UserSession> getRefreshSessionResult() {
+        return refreshSessionLiveData;
     }
 
     public LiveData<String> getError() {
@@ -82,6 +86,17 @@ public class AuthViewModel extends ViewModel {
                 errorLiveData.postValue("No se pudo autenticar con Google");
             } finally {
                 loadingLiveData.postValue(false);
+            }
+        });
+    }
+
+    public void refreshSession() {
+        executor.execute(() -> {
+            try {
+                UserSession session = repository.refreshSession();
+                refreshSessionLiveData.postValue(session);
+            } catch (Exception e) {
+                Log.w("AuthViewModel", "No se pudo actualizar la sesión", e);
             }
         });
     }

@@ -6,7 +6,6 @@
     android:layout_height="match_parent"
     android:background="@color/white">
 
-    <!-- Franja azul superior -->
     <View
         android:id="@+id/header_background"
         android:layout_width="0dp"
@@ -65,222 +64,229 @@
                 android:textStyle="bold"
                 tools:ignore="HardcodedText" />
 
-            <TextView
-                android:id="@+id/vehicle_section_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                android:text="Detalle de Vehículo"
-                android:textColor="@color/ans_primary_dark"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                tools:ignore="HardcodedText" />
-
-            <ImageView
-                android:id="@+id/vehicle_image"
-                android:layout_width="120dp"
-                android:layout_height="120dp"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginBottom="18dp"
-                android:contentDescription="Imagen del vehículo"
-                android:scaleType="centerInside"
-                android:src="@drawable/vehicle" />
-
-            <TextView
-                android:id="@+id/vehicle_plate"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:textAlignment="center"
-                android:textColor="@color/ans_primary_dark"
-                android:textSize="28sp"
-                android:textStyle="bold"
-                tools:text="HWK520" />
-
-            <TextView
-                android:id="@+id/vehicle_brand_model"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:gravity="center"
-                android:textAlignment="center"
-                android:textAllCaps="true"
-                android:textColor="#4E5A67"
-                android:textSize="16sp"
-                tools:text="TOYOTA HILUX" />
-
-            <TextView
-                android:id="@+id/vehicle_year"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:gravity="center"
-                android:textAlignment="center"
-                android:textColor="#8A97A6"
-                android:textSize="14sp"
-                tools:text="2014" />
-
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="24dp"
-                android:layout_marginBottom="22dp"
-                android:background="#E5E7EB" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="18dp"
-                android:text="Información General"
-                android:textColor="@color/ans_primary_dark"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                tools:ignore="HardcodedText" />
-
             <LinearLayout
+                android:id="@+id/vehicle_body_content"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="18dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:orientation="vertical">
 
                 <TextView
-                    android:layout_width="110dp"
+                    android:id="@+id/vehicle_section_title"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Tipo:"
+                    android:layout_marginBottom="24dp"
+                    android:text="Detalle de Vehículo"
                     android:textColor="@color/ans_primary_dark"
-                    android:textSize="16sp"
+                    android:textSize="22sp"
                     android:textStyle="bold"
                     tools:ignore="HardcodedText" />
 
-                <TextView
-                    android:id="@+id/vehicle_type"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="end"
-                    android:textColor="#4E5A67"
-                    android:textSize="16sp"
-                    tools:text="Camioneta" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="18dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+                <ImageView
+                    android:id="@+id/vehicle_image"
+                    android:layout_width="120dp"
+                    android:layout_height="120dp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="18dp"
+                    android:contentDescription="Imagen del vehículo"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/vehicle" />
 
                 <TextView
-                    android:layout_width="110dp"
+                    android:id="@+id/vehicle_plate"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Odómetro:"
+                    android:gravity="center"
+                    android:textAlignment="center"
                     android:textColor="@color/ans_primary_dark"
-                    android:textSize="16sp"
+                    android:textSize="28sp"
                     android:textStyle="bold"
-                    tools:ignore="HardcodedText" />
+                    tools:text="HWK520" />
 
                 <TextView
-                    android:id="@+id/vehicle_odometer"
-                    android:layout_width="0dp"
+                    android:id="@+id/vehicle_brand_model"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="end"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:textAlignment="center"
+                    android:textAllCaps="true"
                     android:textColor="#4E5A67"
                     android:textSize="16sp"
-                    tools:text="383742.9 Km" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:gravity="top"
-                android:orientation="horizontal">
+                    tools:text="TOYOTA HILUX" />
 
                 <TextView
-                    android:layout_width="110dp"
+                    android:id="@+id/vehicle_year"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Proveedor:"
-                    android:textColor="@color/ans_primary_dark"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    tools:ignore="HardcodedText" />
+                    android:layout_marginTop="6dp"
+                    android:gravity="center"
+                    android:textAlignment="center"
+                    android:textColor="#8A97A6"
+                    android:textSize="14sp"
+                    tools:text="2014" />
 
-                <TextView
-                    android:id="@+id/vehicle_provider"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:gravity="end"
-                    android:textColor="#4E5A67"
-                    android:textSize="16sp"
-                    tools:text="ANS Comunicaciones S.A.S." />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/maintenance_info_container"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="28dp"
-                android:background="#F5F6F8"
-                android:orientation="vertical"
-                android:padding="18dp"
-                android:visibility="gone"
-                tools:visibility="visible">
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="24dp"
+                    android:layout_marginBottom="22dp"
+                    android:background="#E5E7EB" />
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="14dp"
-                    android:text="Estado de Mantenimiento"
+                    android:layout_marginBottom="18dp"
+                    android:text="Información General"
                     android:textColor="@color/ans_primary_dark"
                     android:textSize="18sp"
                     android:textStyle="bold"
                     tools:ignore="HardcodedText" />
 
-                <TextView
-                    android:id="@+id/maintenance_due_status"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/ans_primary_dark"
+                    android:layout_marginBottom="18dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="110dp"
+                        android:layout_height="wrap_content"
+                        android:text="Tipo:"
+                        android:textColor="@color/ans_primary_dark"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        tools:ignore="HardcodedText" />
+
+                    <TextView
+                        android:id="@+id/vehicle_type"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="end"
+                        android:textColor="#4E5A67"
+                        android:textSize="16sp"
+                        tools:text="Camioneta" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="18dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="110dp"
+                        android:layout_height="wrap_content"
+                        android:text="Odómetro:"
+                        android:textColor="@color/ans_primary_dark"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        tools:ignore="HardcodedText" />
+
+                    <TextView
+                        android:id="@+id/vehicle_odometer"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="end"
+                        android:textColor="#4E5A67"
+                        android:textSize="16sp"
+                        tools:text="383742.9 Km" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="top"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="110dp"
+                        android:layout_height="wrap_content"
+                        android:text="Proveedor:"
+                        android:textColor="@color/ans_primary_dark"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        tools:ignore="HardcodedText" />
+
+                    <TextView
+                        android:id="@+id/vehicle_provider"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="end"
+                        android:textColor="#4E5A67"
+                        android:textSize="16sp"
+                        tools:text="ANS Comunicaciones S.A.S." />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/maintenance_info_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="28dp"
+                    android:background="#F5F6F8"
+                    android:orientation="vertical"
+                    android:padding="18dp"
+                    android:visibility="gone"
+                    tools:visibility="visible">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="14dp"
+                        android:text="Estado de Mantenimiento"
+                        android:textColor="@color/ans_primary_dark"
+                        android:textSize="18sp"
+                        android:textStyle="bold"
+                        tools:ignore="HardcodedText" />
+
+                    <TextView
+                        android:id="@+id/maintenance_due_status"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textColor="@color/ans_primary_dark"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        tools:text="Al día" />
+
+                    <TextView
+                        android:id="@+id/maintenance_next_due"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:textColor="#4E5A67"
+                        android:textSize="15sp"
+                        tools:text="Próximo: 0.0 Km" />
+
+                    <TextView
+                        android:id="@+id/maintenance_remaining"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:textColor="#4E5A67"
+                        android:textSize="15sp"
+                        tools:text="Faltan: 0.0 Km" />
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/maintenance_button"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="26dp"
+                    android:backgroundTint="@color/ans_primary"
+                    android:text="Reportar Mantenimiento"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
                     android:textSize="16sp"
                     android:textStyle="bold"
-                    tools:text="Al día" />
+                    android:visibility="gone"
+                    tools:visibility="visible" />
 
-                <TextView
-                    android:id="@+id/maintenance_next_due"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:textColor="#4E5A67"
-                    android:textSize="15sp"
-                    tools:text="Próximo: 0.0 Km" />
-
-                <TextView
-                    android:id="@+id/maintenance_remaining"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:textColor="#4E5A67"
-                    android:textSize="15sp"
-                    tools:text="Faltan: 0.0 Km" />
             </LinearLayout>
-
-            <Button
-                android:id="@+id/maintenance_button"
-                android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:layout_marginTop="26dp"
-                android:backgroundTint="@color/ans_primary"
-                android:text="Reportar Mantenimiento"
-                android:textAllCaps="false"
-                android:textColor="@color/white"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:visibility="gone"
-                tools:visibility="visible" />
-
         </LinearLayout>
     </ScrollView>
 

@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.example.app_ans.auth.model.UserSession;
 import com.example.app_ans.auth.session.AuthSessionManager;
 import com.example.app_ans.core.network.NetworkModule;
 import com.example.app_ans.databinding.ActivityHotelBinding;
@@ -17,10 +18,13 @@ import com.example.app_ans.hotels.repository.HotelRepository;
 import com.example.app_ans.hotels.ui.HotelViewModel;
 import com.example.app_ans.hotels.ui.HotelViewModelFactory;
 
+import java.util.Locale;
+
 public class HotelActivity extends AppCompatActivity {
 
     private ActivityHotelBinding binding;
     private HotelViewModel viewModel;
+    private boolean isAdmin = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,8 +33,11 @@ public class HotelActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(binding.getRoot());
 
-        com.example.app_ans.auth.session.AuthSessionManager sessionManager =
-                new com.example.app_ans.auth.session.AuthSessionManager(this);
+        AuthSessionManager sessionManager = new AuthSessionManager(this);
+
+        UserSession session = sessionManager.restoreSession();
+        String role = session != null ? session.getRole() : null;
+        isAdmin = isAdminRole(role);
 
         com.example.app_ans.auth.repository.AuthRepository repository =
                 new com.example.app_ans.auth.repository.AuthRepository(
@@ -57,6 +64,22 @@ public class HotelActivity extends AppCompatActivity {
             binding.backToHome.setOnClickListener(v -> finish());
         }
 
+        authViewModel.getLogoutResult().observe(this, success -> {
+            if (Boolean.TRUE.equals(success)) {
+                Intent intent = new Intent(this, com.example.app_ans.auth.ui.AuthActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
+                        | Intent.FLAG_ACTIVITY_NEW_TASK
+                        | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                startActivity(intent);
+                finish();
+            }
+        });
+
+        if (!isAdmin) {
+            showNavbarOnly();
+            return;
+        }
+
         binding.invoiceCard.setVisibility(View.GONE);
 
         binding.downloadArrow.setOnClickListener(v -> {
@@ -69,20 +92,38 @@ public class HotelActivity extends AppCompatActivity {
             }
         });
 
-        authViewModel.getLogoutResult().observe(this, success -> {
-            if (Boolean.TRUE.equals(success)) {
-                Intent intent = new Intent(this, com.example.app_ans.auth.ui.AuthActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP
-                        | Intent.FLAG_ACTIVITY_NEW_TASK
-                        | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                startActivity(intent);
-                finish();
-            }
-        });
-
         setupHotelsViewModel(sessionManager);
         observeHotelsViewModel();
         viewModel.loadHotelReservation();
+    }
+
+    private boolean isAdminRole(String role) {
+        if (role == null) return false;
+        String normalized = role.trim().toLowerCase(Locale.ROOT);
+        return normalized.equals("administrador") || normalized.equals("admin");
+    }
+
+    private void showNavbarOnly() {
+        if (binding.hotelContent != null) {
+            binding.hotelContent.setVisibility(View.VISIBLE);
+        }
+
+        if (binding.backToHome != null) {
+            binding.backToHome.setVisibility(View.VISIBLE);
+            binding.backToHome.setOnClickListener(v -> finish());
+        }
+
+        if (binding.hotelBodyContent != null) {
+            binding.hotelBodyContent.setVisibility(View.GONE);
+        }
+
+        if (binding.loadingProgress != null) {
+            binding.loadingProgress.setVisibility(View.GONE);
+        }
+
+        if (binding.errorText != null) {
+            binding.errorText.setVisibility(View.GONE);
+        }
     }
 
     private void setupHotelsViewModel(AuthSessionManager sessionManager) {

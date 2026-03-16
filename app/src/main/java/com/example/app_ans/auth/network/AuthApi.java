@@ -11,10 +11,12 @@ import com.example.app_ans.auth.network.dto.SessionResponse;
 import com.example.app_ans.auth.network.dto.StatusResponse;
 import com.example.app_ans.auth.network.dto.TokenResponse;
 
+import java.util.Map;
+
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.GET;
 import retrofit2.http.POST;
-import java.util.Map;
 
 /** Retrofit client for the mobile auth endpoints. */
 public interface AuthApi {
@@ -41,4 +43,7 @@ public interface AuthApi {
 
     @POST("api/mobile/fcm-token")
     Call<Map<String, Object>> registerFCMToken(@Body Map<String, Object> payload);
+
+    @GET("api/mobile/auth/me")
+    Call<SessionResponse> me();
 }

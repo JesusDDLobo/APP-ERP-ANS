@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.example.app_ans.auth.model.UserSession;
 import com.example.app_ans.databinding.ActivityTasksBinding;
 import com.example.app_ans.tasks.model.Task;
 import com.example.app_ans.tasks.ui.TaskAdapter;
@@ -26,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class TasksActivity extends AppCompatActivity {
@@ -34,6 +36,7 @@ public class TasksActivity extends AppCompatActivity {
     private TaskAdapter adapter;
     private boolean isTwoPane;
     private int currentTaskCount = 0;
+    private boolean isAdmin = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,6 +47,10 @@ public class TasksActivity extends AppCompatActivity {
 
         com.example.app_ans.auth.session.AuthSessionManager sessionManager =
                 new com.example.app_ans.auth.session.AuthSessionManager(this);
+
+        UserSession session = sessionManager.restoreSession();
+        String role = session != null ? session.getRole() : null;
+        isAdmin = isAdminRole(role);
 
         com.example.app_ans.auth.repository.AuthRepository authRepository =
                 new com.example.app_ans.auth.repository.AuthRepository(
@@ -83,6 +90,11 @@ public class TasksActivity extends AppCompatActivity {
 
         isTwoPane = binding.detailContainer != null;
 
+        if (!isAdmin) {
+            showNavbarOnly();
+            return;
+        }
+
         setupRecyclerView();
         setupViewModel();
         setupListeners();
@@ -93,7 +105,57 @@ public class TasksActivity extends AppCompatActivity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+
+        if (!isAdmin) {
+            return;
+        }
+
         handleIntent(intent);
+    }
+
+    private boolean isAdminRole(String role) {
+        if (role == null) return false;
+        String normalized = role.trim().toLowerCase(Locale.ROOT);
+        return normalized.equals("administrador") || normalized.equals("admin");
+    }
+
+    private void showNavbarOnly() {
+        if (binding.backToHome != null) {
+            binding.backToHome.setVisibility(View.VISIBLE);
+            binding.backToHome.setOnClickListener(v -> finish());
+        }
+
+        if (binding.tasksSummaryCard != null) {
+            binding.tasksSummaryCard.setVisibility(View.GONE);
+        }
+
+        if (binding.searchBar != null) {
+            binding.searchBar.getRoot().setVisibility(View.GONE);
+        }
+
+        if (binding.tasksRecycler != null) {
+            binding.tasksRecycler.setVisibility(View.GONE);
+        }
+
+        if (binding.newTasksBanner != null) {
+            binding.newTasksBanner.setVisibility(View.GONE);
+        }
+
+        if (binding.completedGroupsContainer != null) {
+            binding.completedGroupsContainer.setVisibility(View.GONE);
+        }
+
+        if (binding.emptyView != null) {
+            binding.emptyView.setVisibility(View.GONE);
+        }
+
+        if (binding.loadingTasks != null) {
+            binding.loadingTasks.setVisibility(View.GONE);
+        }
+
+        if (binding.detailContainer != null) {
+            binding.detailContainer.setVisibility(View.GONE);
+        }
     }
 
     private void handleIntent(Intent intent) {
@@ -124,6 +186,10 @@ public class TasksActivity extends AppCompatActivity {
     }
 
     private void openTaskDetail(Task task) {
+        if (!isAdmin) {
+            return;
+        }
+
         if (isTwoPane) {
             TaskDetailFragment fragment = TaskDetailFragment.newInstance(task);
             getSupportFragmentManager().beginTransaction()
@@ -135,6 +201,10 @@ public class TasksActivity extends AppCompatActivity {
     }
 
     private void openTaskDetailFull(Task task) {
+        if (!isAdmin) {
+            return;
+        }
+
         Intent intent = new Intent(this, TaskDetailActivity.class);
         intent.putExtra("TASK_DATA", task);
         startActivity(intent);
@@ -143,7 +213,9 @@ public class TasksActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        if (viewModel != null) viewModel.loadTasks();
+        if (isAdmin && viewModel != null) {
+            viewModel.loadTasks();
+        }
     }
 
     private void setupRecyclerView() {

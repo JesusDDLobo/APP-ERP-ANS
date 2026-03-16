@@ -43,6 +43,14 @@ public class AuthRepository {
         return session;
     }
 
+    public UserSession refreshSession() throws IOException {
+        SessionResponse response = execute(api.me());
+        UserSession currentSession = sessionManager.restoreSession();
+        UserSession refreshedSession = mapFromMe(response, currentSession);
+        sessionManager.saveSession(refreshedSession);
+        return refreshedSession;
+    }
+
     public void forcePasswordChange(String currentPassword, String newPassword) throws IOException {
         execute(api.forcePasswordChange(new PasswordChangeRequest(currentPassword, newPassword)));
     }
@@ -82,7 +90,24 @@ public class AuthRepository {
                 response.isMustChangePassword(),
                 response.getGoogleServicesStatus(),
                 response.getGoogleServicesMessage(),
-                response.isGoogleStatusRequiresAck()
+                response.isGoogleStatusRequiresAck(),
+                response.resolveRole()
+        );
+    }
+
+    private UserSession mapFromMe(SessionResponse response, @Nullable UserSession currentSession) {
+        return new UserSession(
+                currentSession != null ? currentSession.getAccessToken() : null,
+                currentSession != null ? currentSession.getRefreshToken() : null,
+                response.isMustChangePassword(),
+                response.getGoogleServicesStatus() != null
+                        ? response.getGoogleServicesStatus()
+                        : (currentSession != null ? currentSession.getGoogleServicesStatus() : "ok"),
+                response.getGoogleServicesMessage() != null
+                        ? response.getGoogleServicesMessage()
+                        : (currentSession != null ? currentSession.getGoogleServicesMessage() : null),
+                response.isGoogleStatusRequiresAck(),
+                response.resolveRole()
         );
     }
 

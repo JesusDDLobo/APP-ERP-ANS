@@ -23,6 +23,7 @@ import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.Target;
 import com.example.app_ans.R;
+import com.example.app_ans.auth.model.UserSession;
 import com.example.app_ans.auth.session.AuthSessionManager;
 import com.example.app_ans.auth.ui.AuthActivity;
 import com.example.app_ans.core.network.NetworkModule;
@@ -35,6 +36,7 @@ import com.example.app_ans.vehicles.repository.VehicleRepository;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import okhttp3.MediaType;
@@ -48,10 +50,13 @@ public class VehicleDetailActivity extends AppCompatActivity {
     private Vehicle currentVehicle;
     private MaintenanceDialog activeMaintenanceDialog;
     private String pendingFieldId;
+    private boolean isAdmin = false;
 
     private final ActivityResultLauncher<String[]> imagePickerLauncher = registerForActivityResult(
             new ActivityResultContracts.OpenMultipleDocuments(),
             uris -> {
+                if (!isAdmin) return;
+
                 if (uris != null && !uris.isEmpty() && pendingFieldId != null && activeMaintenanceDialog != null) {
                     Uri firstValidUri = null;
                     for (Uri uri : uris) {
@@ -79,15 +84,54 @@ public class VehicleDetailActivity extends AppCompatActivity {
         binding = ActivityVehicleDetailBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        AuthSessionManager sessionManager = new AuthSessionManager(this);
+        UserSession session = sessionManager.restoreSession();
+        String role = session != null ? session.getRole() : null;
+        isAdmin = isAdminRole(role);
+
         setupNavbar();
         setupViewModel();
-        observeViewModel();
 
         if (binding.backToHome != null) {
             binding.backToHome.setOnClickListener(v -> finish());
         }
 
+        if (!isAdmin) {
+            showNavbarOnly();
+            return;
+        }
+
+        observeViewModel();
         viewModel.loadMyVehicle();
+    }
+
+    private boolean isAdminRole(String role) {
+        if (role == null) return false;
+        String normalized = role.trim().toLowerCase(Locale.ROOT);
+        return normalized.equals("administrador") || normalized.equals("admin");
+    }
+
+    private void showNavbarOnly() {
+        if (binding.vehicleContent != null) {
+            binding.vehicleContent.setVisibility(View.VISIBLE);
+        }
+
+        if (binding.backToHome != null) {
+            binding.backToHome.setVisibility(View.VISIBLE);
+            binding.backToHome.setOnClickListener(v -> finish());
+        }
+
+        if (binding.vehicleBodyContent != null) {
+            binding.vehicleBodyContent.setVisibility(View.GONE);
+        }
+
+        if (binding.loadingProgress != null) {
+            binding.loadingProgress.setVisibility(View.GONE);
+        }
+
+        if (binding.errorText != null) {
+            binding.errorText.setVisibility(View.GONE);
+        }
     }
 
     private void setupNavbar() {
@@ -152,6 +196,8 @@ public class VehicleDetailActivity extends AppCompatActivity {
         this.currentVehicle = vehicle;
 
         binding.vehicleContent.setVisibility(View.VISIBLE);
+        binding.errorText.setVisibility(View.GONE);
+
         binding.vehiclePlate.setText(vehicle.getPlate());
         binding.vehicleBrandModel.setText(vehicle.getBrand() + " " + vehicle.getModel());
         binding.vehicleYear.setText(String.valueOf(vehicle.getYear()));

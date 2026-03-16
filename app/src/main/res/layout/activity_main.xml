@@ -264,6 +264,7 @@
 
             <!-- RENDICIONES -->
             <androidx.cardview.widget.CardView
+                android:id="@+id/renditions_card"
                 android:layout_width="0dp"
                 android:layout_height="116dp"
                 android:layout_columnWeight="1"

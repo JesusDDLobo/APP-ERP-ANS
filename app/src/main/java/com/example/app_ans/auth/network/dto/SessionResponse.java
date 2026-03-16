@@ -1,20 +1,28 @@
 package com.example.app_ans.auth.network.dto;
 
+import androidx.annotation.Nullable;
+
 import com.google.gson.annotations.SerializedName;
 
 public class SessionResponse {
     @SerializedName("access_token")
     private String accessToken;
+
     @SerializedName("refresh_token")
     private String refreshToken;
+
     @SerializedName("must_change_password")
     private boolean mustChangePassword;
+
     @SerializedName("google_services_status")
     private String googleServicesStatus;
+
     @SerializedName("google_services_message")
     private String googleServicesMessage;
+
     @SerializedName("google_status_requires_ack")
     private boolean googleStatusRequiresAck;
+
     @SerializedName("user")
     private UserData user;
 
@@ -41,22 +49,54 @@ public class SessionResponse {
     public boolean isGoogleStatusRequiresAck() {
         return googleStatusRequiresAck;
     }
-    
+
     public UserData getUser() {
         return user;
+    }
+
+    @Nullable
+    public String resolveRole() {
+        if (user != null && user.getRole() != null && !user.getRole().trim().isEmpty()) {
+            return user.getRole().trim();
+        }
+        return null;
     }
 
     public static class UserData {
         @SerializedName("id")
         private int id;
+
         @SerializedName("email")
         private String email;
+
         @SerializedName("name")
         private String name;
+
         @SerializedName("google_access_token")
         private String googleAccessToken;
-        
-        public String getGoogleAccessToken() { return googleAccessToken; }
+
+        @SerializedName("role")
+        private String role;
+
+        public int getId() {
+            return id;
+        }
+
+        public String getEmail() {
+            return email;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getGoogleAccessToken() {
+            return googleAccessToken;
+        }
+
+        @Nullable
+        public String getRole() {
+            return role;
+        }
     }
 }
-

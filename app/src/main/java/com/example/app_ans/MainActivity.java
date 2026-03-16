@@ -1,10 +1,13 @@
 package com.example.app_ans;
 
+import android.content.Context;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
-
-import com.example.app_ans.auth.network.AuthApi;
 
 import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
@@ -13,6 +16,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.ViewCompat;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.example.app_ans.auth.model.UserSession;
+import com.example.app_ans.auth.network.AuthApi;
 import com.example.app_ans.auth.repository.AuthRepository;
 import com.example.app_ans.auth.session.AuthSessionManager;
 import com.example.app_ans.auth.ui.AuthActivity;
@@ -24,9 +29,8 @@ import com.example.app_ans.core.ui.NavbarUtils;
 import com.example.app_ans.databinding.ActivityMainBinding;
 import com.google.firebase.messaging.FirebaseMessaging;
 
-import android.util.Log;
-
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import retrofit2.Call;
@@ -38,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
     private AuthViewModel authViewModel;
     private AuthSessionManager sessionManager;
     private ActivityResultLauncher<String> requestNotificationPermissionLauncher;
+    private boolean isAdmin = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,12 +70,14 @@ public class MainActivity extends AppCompatActivity {
         authViewModel = new ViewModelProvider(this, new AuthViewModelFactory(repository))
                 .get(AuthViewModel.class);
 
+        resolveRoleAccess();
         setupUi();
         observeViewModel();
         handleIncomingFlags();
         handleTaskRedirect(getIntent());
         requestNotificationPermission();
         registerFCMToken();
+        refreshSessionIfOnline();
     }
 
     @Override
@@ -79,6 +86,41 @@ public class MainActivity extends AppCompatActivity {
         setIntent(intent);
         handleIncomingFlags();
         handleTaskRedirect(intent);
+    }
+
+    private void resolveRoleAccess() {
+        UserSession session = sessionManager.restoreSession();
+        String role = session != null ? session.getRole() : null;
+        isAdmin = isAdminRole(role);
+        Log.d("ROLE_DEBUG", "Role restored: " + role + " | isAdmin=" + isAdmin);
+    }
+
+    private boolean isAdminRole(String role) {
+        if (role == null) return false;
+        String normalized = role.trim().toLowerCase(Locale.ROOT);
+        return normalized.equals("administrador") || normalized.equals("admin");
+    }
+
+    private void refreshSessionIfOnline() {
+        if (hasInternetConnection()) {
+            authViewModel.refreshSession();
+        } else {
+            Log.d("SESSION_REFRESH", "Sin internet, se usa la sesión local");
+        }
+    }
+
+    private boolean hasInternetConnection() {
+        ConnectivityManager cm =
+                (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm == null) return false;
+
+        Network network = cm.getActiveNetwork();
+        if (network == null) return false;
+
+        NetworkCapabilities capabilities = cm.getNetworkCapabilities(network);
+        if (capabilities == null) return false;
+
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
     }
 
     private void handleTaskRedirect(Intent intent) {
@@ -124,6 +166,22 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupUi() {
+        applyRoleAccess();
+
+        NavbarUtils.setupNavbar(
+                this,
+                null,
+                () -> authViewModel.logout(this)
+        );
+    }
+
+    private void applyRoleAccess() {
+        binding.dashboardPanel.setVisibility(android.view.View.VISIBLE);
+        binding.tasksButton.setVisibility(android.view.View.VISIBLE);
+        binding.hotelButton.setVisibility(android.view.View.VISIBLE);
+        binding.vehicleButton.setVisibility(android.view.View.VISIBLE);
+        binding.renditionsCard.setVisibility(android.view.View.VISIBLE);
+
         binding.tasksButton.setOnClickListener(v ->
                 startActivity(new Intent(this, TasksActivity.class)));
 
@@ -133,17 +191,35 @@ public class MainActivity extends AppCompatActivity {
         binding.vehicleButton.setOnClickListener(v ->
                 startActivity(new Intent(this, com.example.app_ans.vehicles.ui.VehicleDetailActivity.class)));
 
-        NavbarUtils.setupNavbar(
-                this,
-                null,
-                () -> authViewModel.logout(this)
-        );
+        binding.renditionsButton.setOnClickListener(v ->
+                Toast.makeText(this, "Rendiciones próximamente", Toast.LENGTH_SHORT).show());
     }
 
     private void observeViewModel() {
         authViewModel.getError().observe(this, msg -> {
             if (msg != null) {
                 Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        authViewModel.getRefreshSessionResult().observe(this, session -> {
+            if (session != null) {
+                String oldRole = null;
+                UserSession current = sessionManager.restoreSession();
+                if (current != null) {
+                    oldRole = current.getRole();
+                }
+
+                resolveRoleAccess();
+                applyRoleAccess();
+                handleIncomingFlags();
+                handleTaskRedirect(getIntent());
+
+                String newRole = session.getRole();
+                if ((oldRole == null && newRole != null) ||
+                        (oldRole != null && !oldRole.equalsIgnoreCase(newRole != null ? newRole : ""))) {
+                    Toast.makeText(this, "Sesión actualizada", Toast.LENGTH_SHORT).show();
+                }
             }
         });
 

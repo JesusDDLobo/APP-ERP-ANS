@@ -10,14 +10,16 @@ public class UserSession {
     private final String googleServicesStatus;
     private final String googleServicesMessage;
     private final boolean googleStatusRequiresAck;
+    private final String role;
 
     public UserSession(
             String accessToken,
-            String refreshToken,
+            @Nullable String refreshToken,
             boolean mustChangePassword,
             String googleServicesStatus,
-            String googleServicesMessage,
-            boolean googleStatusRequiresAck
+            @Nullable String googleServicesMessage,
+            boolean googleStatusRequiresAck,
+            @Nullable String role
     ) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
@@ -25,6 +27,7 @@ public class UserSession {
         this.googleServicesStatus = googleServicesStatus;
         this.googleServicesMessage = googleServicesMessage;
         this.googleStatusRequiresAck = googleStatusRequiresAck;
+        this.role = role;
     }
 
     public String getAccessToken() {
@@ -52,5 +55,13 @@ public class UserSession {
     public boolean getGoogleStatusRequiresAck() {
         return googleStatusRequiresAck;
     }
-}
 
+    @Nullable
+    public String getRole() {
+        return role;
+    }
+
+    public boolean isAdmin() {
+        return role != null && role.trim().equalsIgnoreCase("admin");
+    }
+}
