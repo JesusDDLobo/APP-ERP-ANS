@@ -1,5 +1,7 @@
 package com.example.app_ans.tasks.network;
 
+import com.example.app_ans.tasks.model.CoordinatorSubWorkOrder;
+import com.example.app_ans.tasks.model.SubWorkOrderTasksResponse;
 import com.example.app_ans.tasks.model.Task;
 import com.example.app_ans.tasks.model.TaskQuestion;
 
@@ -23,6 +25,12 @@ public interface TaskApi {
     @GET("api/mobile/tasks/{id}")
     Call<Task> getTaskDetail(@Path("id") int taskId);
 
+    @GET("api/mobile/coordinator/sub-work-orders")
+    Call<List<CoordinatorSubWorkOrder>> getCoordinatorSubWorkOrders();
+
+    @GET("api/sub-work-orders/{id}/tasks")
+    Call<SubWorkOrderTasksResponse> getSubWorkOrderTasks(@Path("id") int subWorkOrderId);
+
     @Multipart
     @POST("api/mobile/tasks/{id}/advance")
     Call<Task> submitAdvance(
@@ -32,10 +40,10 @@ public interface TaskApi {
     );
 
     @POST("api/mobile/tasks/advances/{advanceId}/update")
-    @retrofit2.http.FormUrlEncoded
+    @FormUrlEncoded
     Call<Task> updateAdvance(
             @Path("advanceId") int advanceId,
-            @retrofit2.http.Field("content") String content
+            @Field("content") String content
     );
 
     @POST("api/mobile/tasks/advances/{advanceId}/delete")

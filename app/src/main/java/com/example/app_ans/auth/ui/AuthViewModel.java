@@ -69,7 +69,8 @@ public class AuthViewModel extends ViewModel {
                 UserSession session = repository.login(email, password);
                 sessionLiveData.postValue(session);
             } catch (Exception e) {
-                errorLiveData.postValue("Error de autenticación");
+                Log.e("AuthViewModel", "Login normal falló", e);
+                errorLiveData.postValue("Error de autenticación: " + safeMessage(e));
             } finally {
                 loadingLiveData.postValue(false);
             }
@@ -80,10 +81,12 @@ public class AuthViewModel extends ViewModel {
         loadingLiveData.setValue(true);
         executor.execute(() -> {
             try {
+                Log.d("AuthViewModel", "Intercambiando authCode con backend...");
                 UserSession session = repository.exchangeGoogleCode(authCode);
                 sessionLiveData.postValue(session);
             } catch (Exception e) {
-                errorLiveData.postValue("No se pudo autenticar con Google");
+                Log.e("AuthViewModel", "Falló exchangeGoogleCode", e);
+                errorLiveData.postValue("No se pudo autenticar con Google: " + safeMessage(e));
             } finally {
                 loadingLiveData.postValue(false);
             }
@@ -102,23 +105,20 @@ public class AuthViewModel extends ViewModel {
     }
 
     public void logout(Context context) {
-        // 1. Sign out from Google
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
-                .requestServerAuthCode(BuildConfig.GOOGLE_SERVER_CLIENT_ID)
+                .requestServerAuthCode(BuildConfig.GOOGLE_SERVER_CLIENT_ID, false)
                 .build();
 
         GoogleSignInClient googleSignInClient = GoogleSignIn.getClient(context, gso);
         googleSignInClient.signOut().addOnCompleteListener(task -> {
             Log.d("AuthViewModel", "Google Sign-Out complete. Clearing local session.");
-            // 2. Clear local session data from repository in background
             executor.execute(() -> {
                 try {
                     repository.logout();
                 } catch (Exception e) {
                     Log.e("AuthViewModel", "Error during repository logout", e);
                 } finally {
-                    // 3. Notify UI that logout is complete
                     logoutLiveData.postValue(true);
                 }
             });
@@ -132,7 +132,8 @@ public class AuthViewModel extends ViewModel {
                 repository.setupPassword(password);
                 passwordSetupLiveData.postValue(true);
             } catch (Exception e) {
-                errorLiveData.postValue("No se pudo actualizar la contraseña");
+                Log.e("AuthViewModel", "No se pudo actualizar la contraseña", e);
+                errorLiveData.postValue("No se pudo actualizar la contraseña: " + safeMessage(e));
                 passwordSetupLiveData.postValue(false);
             } finally {
                 loadingLiveData.postValue(false);
@@ -146,10 +147,15 @@ public class AuthViewModel extends ViewModel {
                 repository.acknowledgeGoogleStatus();
                 googleAckLiveData.postValue(true);
             } catch (Exception e) {
-                errorLiveData.postValue("No se pudo registrar la confirmación");
+                Log.e("AuthViewModel", "No se pudo registrar confirmación Google", e);
+                errorLiveData.postValue("No se pudo registrar la confirmación: " + safeMessage(e));
                 googleAckLiveData.postValue(false);
             }
         });
+    }
+
+    private String safeMessage(Exception e) {
+        return e.getMessage() != null ? e.getMessage() : "sin detalle";
     }
 
     @Override

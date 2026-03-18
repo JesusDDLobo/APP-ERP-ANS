@@ -1,5 +1,7 @@
 package com.example.app_ans.auth.repository;
 
+import android.util.Log;
+
 import androidx.annotation.Nullable;
 
 import com.example.app_ans.auth.model.UserSession;
@@ -30,6 +32,7 @@ public class AuthRepository {
     }
 
     public UserSession exchangeGoogleCode(String authCode) throws IOException {
+        Log.d("AuthRepository", "Enviando authCode al backend...");
         SessionResponse response = execute(api.exchangeGoogleCode(new GoogleCodeRequest(authCode)));
         UserSession session = map(response);
         sessionManager.saveSession(session);
@@ -113,9 +116,25 @@ public class AuthRepository {
 
     private <T> T execute(Call<T> call) throws IOException {
         Response<T> response = call.execute();
-        if (!response.isSuccessful() || response.body() == null) {
-            throw new IOException("Auth request failed: " + response.code());
+
+        if (!response.isSuccessful()) {
+            String errorBody = null;
+            try {
+                if (response.errorBody() != null) {
+                    errorBody = response.errorBody().string();
+                }
+            } catch (Exception ignored) {
+            }
+
+            Log.e("AuthRepository", "Auth request failed. code=" + response.code() + ", message=" + response.message() + ", errorBody=" + errorBody);
+            throw new IOException("HTTP " + response.code() + " - " + (errorBody != null ? errorBody : response.message()));
         }
+
+        if (response.body() == null) {
+            Log.e("AuthRepository", "Auth request failed: body vacío");
+            throw new IOException("Respuesta vacía del servidor");
+        }
+
         return response.body();
     }
 }

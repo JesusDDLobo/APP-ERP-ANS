@@ -1,5 +1,7 @@
 package com.example.app_ans.tasks.repository;
 
+import com.example.app_ans.tasks.model.CoordinatorSubWorkOrder;
+import com.example.app_ans.tasks.model.SubWorkOrderTasksResponse;
 import com.example.app_ans.tasks.model.Task;
 import com.example.app_ans.tasks.model.TaskQuestion;
 import com.example.app_ans.tasks.network.TaskApi;
@@ -36,13 +38,11 @@ public class TaskRepository {
     }
 
     public List<Task> getTasks() throws IOException {
-        // Try network and update cache
         try {
             List<Task> tasks = execute(api.getTasks());
             updateTasksCache(tasks);
             return tasks;
         } catch (IOException e) {
-            // Fallback to cache
             List<TaskEntity> cached = db.taskDao().getAllTasks();
             if (!cached.isEmpty()) {
                 return TaskMapper.toDomainList(cached);
@@ -51,21 +51,23 @@ public class TaskRepository {
         }
     }
 
+    public List<CoordinatorSubWorkOrder> getCoordinatorSubWorkOrders() throws IOException {
+        return execute(api.getCoordinatorSubWorkOrders());
+    }
+
+    public SubWorkOrderTasksResponse getSubWorkOrderTasks(int subWorkOrderId) throws IOException {
+        return execute(api.getSubWorkOrderTasks(subWorkOrderId));
+    }
+
     private void updateTasksCache(List<Task> tasks) {
         for (Task task : tasks) {
             TaskEntity newEntity = TaskMapper.toEntity(task);
 
-            // SEGURIDAD DE TIEMPO: Mientras la tarea esté corriendo,
-            // la UI es la dueña del cronómetro. No permitimos que el servidor
-            // sobrescriba el tiempo acumulado a menos que la diferencia sea enorme
-            // (lo cual indicaría un cambio real de estado o edición administrativa).
             TaskEntity existing = db.taskDao().getTaskById(task.getId());
             if (existing != null && existing.isRunning && newEntity.isRunning) {
                 long localSecs = com.example.app_ans.core.utils.DateUtils.parseDurationToSeconds(existing.totalTimeSpent);
                 long serverSecs = com.example.app_ans.core.utils.DateUtils.parseDurationToSeconds(newEntity.totalTimeSpent);
 
-                // Si el servidor trae más de 1 hora de diferencia (salto de zona horaria),
-                // o si el tiempo local es superior por poco (latencia), protegemos el local.
                 if (Math.abs(serverSecs - localSecs) > 3000 || localSecs > serverSecs) {
                     newEntity.totalTimeSpent = existing.totalTimeSpent;
                 }
@@ -161,9 +163,6 @@ public class TaskRepository {
     }
 
     public void completeTask(int taskId, String answersJson, List<MultipartBody.Part> files) throws IOException {
-        // NOTE: The backend might expect individual multipart fields (answers[1], answers[2]) 
-        // instead of a JSON string. If the endpoint fails with 422, consider changing this 
-        // to a Map<String, RequestBody> or adding a shim in the backend.
         RequestBody answersBody = RequestBody.create(answersJson, MediaType.parse("application/json"));
         Response<Void> response = api.completeTask(taskId, answersBody, files).execute();
         if (!response.isSuccessful()) {

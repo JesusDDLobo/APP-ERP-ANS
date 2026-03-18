@@ -17,6 +17,8 @@ import com.example.app_ans.core.network.NetworkModule;
 import com.example.app_ans.core.persistence.AppDatabase;
 import com.example.app_ans.core.persistence.PendingAdvance;
 import com.example.app_ans.core.utils.FileStorageUtils;
+import com.example.app_ans.tasks.model.CoordinatorSubWorkOrder;
+import com.example.app_ans.tasks.model.SubWorkOrderTasksResponse;
 import com.example.app_ans.tasks.model.Task;
 import com.example.app_ans.tasks.network.SyncLocationWorker;
 import com.example.app_ans.tasks.network.UploadAdvanceWorker;
@@ -35,6 +37,8 @@ public class TaskViewModel extends AndroidViewModel {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     private final MutableLiveData<List<Task>> tasksLiveData = new MutableLiveData<>();
+    private final MutableLiveData<List<CoordinatorSubWorkOrder>> coordinatorSubWorkOrdersLiveData = new MutableLiveData<>();
+    private final MutableLiveData<List<Task>> subWorkOrderTasksLiveData = new MutableLiveData<>();
     private final MutableLiveData<String> errorLiveData = new MutableLiveData<>();
     private final MutableLiveData<Boolean> loadingLiveData = new MutableLiveData<>();
     private final MutableLiveData<Boolean> completionSuccessLiveData = new MutableLiveData<>();
@@ -59,6 +63,8 @@ public class TaskViewModel extends AndroidViewModel {
     }
 
     public LiveData<List<Task>> getTasks() { return tasksLiveData; }
+    public LiveData<List<CoordinatorSubWorkOrder>> getCoordinatorSubWorkOrders() { return coordinatorSubWorkOrdersLiveData; }
+    public LiveData<List<Task>> getSubWorkOrderTasks() { return subWorkOrderTasksLiveData; }
     public LiveData<String> getError() { return errorLiveData; }
     public LiveData<Boolean> getLoading() { return loadingLiveData; }
     public LiveData<Boolean> getCompletionSuccess() { return completionSuccessLiveData; }
@@ -170,6 +176,39 @@ public class TaskViewModel extends AndroidViewModel {
         });
     }
 
+    public void loadCoordinatorSubWorkOrders() {
+        errorLiveData.postValue(null);
+        loadingLiveData.postValue(true);
+
+        executor.execute(() -> {
+            try {
+                List<CoordinatorSubWorkOrder> items = repository.getCoordinatorSubWorkOrders();
+                coordinatorSubWorkOrdersLiveData.postValue(items);
+            } catch (Exception e) {
+                errorLiveData.postValue(e.getMessage());
+            } finally {
+                loadingLiveData.postValue(false);
+            }
+        });
+    }
+
+    public void loadSubWorkOrderTasks(int subWorkOrderId) {
+        errorLiveData.postValue(null);
+        loadingLiveData.postValue(true);
+
+        executor.execute(() -> {
+            try {
+                SubWorkOrderTasksResponse response = repository.getSubWorkOrderTasks(subWorkOrderId);
+                List<Task> tasks = response != null ? response.getTasks() : null;
+                subWorkOrderTasksLiveData.postValue(tasks);
+            } catch (Exception e) {
+                errorLiveData.postValue(e.getMessage());
+            } finally {
+                loadingLiveData.postValue(false);
+            }
+        });
+    }
+
     public void toggleTimer(int taskId, String currentDuration) {
         loadingLiveData.postValue(true);
 
@@ -178,13 +217,10 @@ public class TaskViewModel extends AndroidViewModel {
                 Task updatedTask = repository.toggleTimer(taskId, currentDuration);
                 taskDetailLiveData.postValue(updatedTask);
 
-                // Refrescar la lista general para que la condición
-                // de "otra tarea en ejecución" use datos actualizados
                 try {
                     List<Task> tasks = repository.getTasks();
                     tasksLiveData.postValue(tasks);
                 } catch (Exception ignored) {
-                    // si falla refrescando lista, al menos queda actualizado el detalle
                 }
 
                 scheduleTimerSync();
@@ -389,7 +425,6 @@ public class TaskViewModel extends AndroidViewModel {
                 deleteDraft("COMPLETION_" + taskId);
                 completionSuccessLiveData.postValue(true);
 
-                // Recargar todo después de completar
                 loadTaskDetail(taskId);
                 loadTasks();
             } catch (Exception e) {

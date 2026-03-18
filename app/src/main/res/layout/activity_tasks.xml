@@ -13,9 +13,9 @@
         android:layout_width="0dp"
         android:layout_height="120dp"
         android:background="@color/dashboard_blue"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <include
         android:id="@+id/navbar"
@@ -24,15 +24,17 @@
         android:layout_height="wrap_content"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <ScrollView
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/tasks_scroll_container"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:background="#F3F4F6"
         android:fillViewport="true"
-        app:layout_constraintTop_toBottomOf="@id/header_background"
+        android:overScrollMode="never"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/header_background">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -75,9 +77,9 @@
                         app:cardBackgroundColor="#4DFFFFFF"
                         app:cardCornerRadius="12dp"
                         app:cardElevation="0dp"
+                        app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"
-                        app:layout_constraintBottom_toBottomOf="parent">
+                        app:layout_constraintTop_toTopOf="parent">
 
                         <ImageView
                             android:layout_width="match_parent"
@@ -96,9 +98,9 @@
                         android:textColor="@android:color/white"
                         android:textSize="18sp"
                         android:textStyle="bold"
+                        app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toEndOf="@id/tasks_summary_icon_box"
-                        app:layout_constraintTop_toTopOf="@id/tasks_summary_icon_box"
-                        app:layout_constraintEnd_toEndOf="parent" />
+                        app:layout_constraintTop_toTopOf="@id/tasks_summary_icon_box" />
 
                     <TextView
                         android:id="@+id/tasks_summary_subtitle"
@@ -109,9 +111,9 @@
                         android:text="Gestiona tus tareas pendientes"
                         android:textColor="@android:color/white"
                         android:textSize="14sp"
+                        app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toEndOf="@id/tasks_summary_icon_box"
-                        app:layout_constraintTop_toBottomOf="@id/tasks_summary_title"
-                        app:layout_constraintEnd_toEndOf="parent" />
+                        app:layout_constraintTop_toBottomOf="@id/tasks_summary_title" />
                 </androidx.constraintlayout.widget.ConstraintLayout>
             </androidx.cardview.widget.CardView>
 
@@ -123,6 +125,7 @@
 
             <com.google.android.material.chip.Chip
                 android:id="@+id/new_tasks_banner"
+                style="@style/Widget.MaterialComponents.Chip.Action"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_horizontal"
@@ -132,8 +135,7 @@
                 android:visibility="gone"
                 app:chipBackgroundColor="@color/ans_secondary"
                 app:chipIcon="@drawable/baseline_add_24"
-                app:chipIconTint="@color/white"
-                style="@style/Widget.MaterialComponents.Chip.Action" />
+                app:chipIconTint="@color/white" />
 
             <ProgressBar
                 android:id="@+id/loading_tasks"
@@ -150,6 +152,7 @@
                 android:layout_marginTop="16dp"
                 android:clipToPadding="false"
                 android:nestedScrollingEnabled="false"
+                android:overScrollMode="never"
                 android:paddingBottom="12dp"
                 tools:listitem="@layout/item_task" />
 
@@ -159,6 +162,13 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:orientation="vertical" />
+
+            <FrameLayout
+                android:id="@+id/coordinator_fragment_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/empty_view"
@@ -172,6 +182,6 @@
                 android:visibility="gone" />
 
         </LinearLayout>
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

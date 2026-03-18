@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import com.example.app_ans.auth.model.UserSession;
 import com.example.app_ans.databinding.ActivityTasksBinding;
 import com.example.app_ans.tasks.model.Task;
+import com.example.app_ans.tasks.ui.CoordinatorTasksFragment;
 import com.example.app_ans.tasks.ui.TaskAdapter;
 import com.example.app_ans.tasks.ui.TaskDetailActivity;
 import com.example.app_ans.tasks.ui.TaskDetailFragment;
@@ -37,6 +38,7 @@ public class TasksActivity extends AppCompatActivity {
     private boolean isTwoPane;
     private int currentTaskCount = 0;
     private boolean isAdmin = false;
+    private boolean isCoordinator = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +53,10 @@ public class TasksActivity extends AppCompatActivity {
         UserSession session = sessionManager.restoreSession();
         String role = session != null ? session.getRole() : null;
         isAdmin = isAdminRole(role);
+        isCoordinator = isCoordinatorRole(role);
+
+        android.util.Log.d("TasksActivityRole", "Rol recibido: " + role);
+        android.util.Log.d("TasksActivityRole", "isAdmin=" + isAdmin + " | isCoordinator=" + isCoordinator);
 
         com.example.app_ans.auth.repository.AuthRepository authRepository =
                 new com.example.app_ans.auth.repository.AuthRepository(
@@ -69,6 +75,12 @@ public class TasksActivity extends AppCompatActivity {
                 "Tareas",
                 () -> authViewModel.logout(this)
         );
+
+        binding.navbar.navbarLogoutButton.setVisibility(View.VISIBLE);
+        binding.navbar.navbarLogoutButton.setOnClickListener(v -> {
+            android.util.Log.d("TasksLogout", "Logout presionado");
+            authViewModel.logout(this);
+        });
 
         binding.navbar.navbarBackButton.setVisibility(View.GONE);
         binding.navbar.navbarTitle.setVisibility(View.GONE);
@@ -90,15 +102,20 @@ public class TasksActivity extends AppCompatActivity {
 
         isTwoPane = binding.detailContainer != null;
 
-        if (!isAdmin) {
-            showNavbarOnly();
+        if (isAdmin) {
+            setupRecyclerView();
+            setupViewModel();
+            setupListeners();
+            handleIntent(getIntent());
             return;
         }
 
-        setupRecyclerView();
-        setupViewModel();
-        setupListeners();
-        handleIntent(getIntent());
+        if (isCoordinator) {
+            showCoordinatorView();
+            return;
+        }
+
+        showNavbarOnly();
     }
 
     @Override
@@ -119,7 +136,64 @@ public class TasksActivity extends AppCompatActivity {
         return normalized.equals("administrador") || normalized.equals("admin");
     }
 
+    private boolean isCoordinatorRole(String role) {
+        if (role == null) return false;
+        String normalized = role.trim().toLowerCase(Locale.ROOT);
+        return normalized.equals("coordinador de operaciones");
+    }
+
+    private void showCoordinatorView() {
+        android.util.Log.d("TasksCoordinator", "Entró a showCoordinatorView");
+
+        hideAdminTaskViews();
+
+        if (binding.emptyView != null) {
+            binding.emptyView.setVisibility(View.GONE);
+        }
+
+        if (binding.loadingTasks != null) {
+            binding.loadingTasks.setVisibility(View.GONE);
+        }
+
+        if (binding.detailContainer != null) {
+            binding.detailContainer.setVisibility(View.GONE);
+        }
+
+        View coordinatorContainer = findViewById(R.id.coordinator_fragment_container);
+        if (coordinatorContainer != null) {
+            coordinatorContainer.setVisibility(View.VISIBLE);
+
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.coordinator_fragment_container, CoordinatorTasksFragment.newInstance())
+                    .commit();
+        } else {
+            Toast.makeText(this, "No se encontró el contenedor del coordinador", Toast.LENGTH_LONG).show();
+        }
+    }
+
     private void showNavbarOnly() {
+        hideAdminTaskViews();
+
+        if (binding.emptyView != null) {
+            binding.emptyView.setVisibility(View.GONE);
+        }
+
+        if (binding.loadingTasks != null) {
+            binding.loadingTasks.setVisibility(View.GONE);
+        }
+
+        if (binding.detailContainer != null) {
+            binding.detailContainer.setVisibility(View.GONE);
+        }
+
+        View coordinatorContainer = findViewById(R.id.coordinator_fragment_container);
+        if (coordinatorContainer != null) {
+            coordinatorContainer.setVisibility(View.GONE);
+        }
+    }
+
+    private void hideAdminTaskViews() {
         if (binding.backToHome != null) {
             binding.backToHome.setVisibility(View.VISIBLE);
             binding.backToHome.setOnClickListener(v -> finish());
@@ -143,18 +217,6 @@ public class TasksActivity extends AppCompatActivity {
 
         if (binding.completedGroupsContainer != null) {
             binding.completedGroupsContainer.setVisibility(View.GONE);
-        }
-
-        if (binding.emptyView != null) {
-            binding.emptyView.setVisibility(View.GONE);
-        }
-
-        if (binding.loadingTasks != null) {
-            binding.loadingTasks.setVisibility(View.GONE);
-        }
-
-        if (binding.detailContainer != null) {
-            binding.detailContainer.setVisibility(View.GONE);
         }
     }
 
@@ -274,7 +336,7 @@ public class TasksActivity extends AppCompatActivity {
         });
 
         viewModel.getLoading().observe(this, loading -> {
-            binding.loadingTasks.setVisibility(loading ? View.VISIBLE : View.GONE);
+            binding.loadingTasks.setVisibility(Boolean.TRUE.equals(loading) ? View.VISIBLE : View.GONE);
         });
 
         viewModel.getError().observe(this, error -> {
