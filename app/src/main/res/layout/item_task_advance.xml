@@ -5,44 +5,45 @@
     android:layout_height="wrap_content"
     android:layout_marginHorizontal="16dp"
     android:layout_marginVertical="6dp"
+    app:cardBackgroundColor="#F8FAFC"
     app:cardCornerRadius="12dp"
-    app:cardElevation="2dp"
-    app:cardBackgroundColor="#F8FAFC">
+    app:cardElevation="2dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="12dp">
 
-        <!-- CABECERA (Siempre visible) -->
         <LinearLayout
             android:id="@+id/header_layout"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
             android:gravity="center_vertical"
+            android:orientation="horizontal"
             app:layout_constraintEnd_toStartOf="@+id/iv_expand_arrow"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent">
 
-            <!-- Fecha y Hora -->
             <LinearLayout
-                android:layout_width="70dp"
+                android:layout_width="84dp"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center">
+                android:gravity="center"
+                android:orientation="vertical">
+
                 <TextView
                     android:id="@+id/tv_advance_date"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="08-01-2026"
+                    android:text="08/01/2026"
                     android:textColor="#475569"
                     android:textSize="10sp"
-                    android:textStyle="bold|italic" />
+                    android:textStyle="bold" />
+
                 <TextView
                     android:id="@+id/tv_advance_time"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
                     android:text="15:54"
                     android:textColor="#94A3B8"
                     android:textSize="10sp" />
@@ -50,45 +51,51 @@
 
             <View
                 android:layout_width="1dp"
-                android:layout_height="30dp"
+                android:layout_height="34dp"
                 android:layout_marginHorizontal="8dp"
                 android:background="#E2E8F0" />
 
-            <!-- Info Usuario y Snippet -->
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:orientation="vertical">
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
                     <ImageView
                         android:layout_width="12dp"
                         android:layout_height="12dp"
                         android:src="@drawable/ic_person_24"
                         app:tint="#1E293B" />
+
                     <TextView
                         android:id="@+id/tv_advance_author"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="4dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
                         android:text="Nombre Usuario"
                         android:textColor="#1E293B"
                         android:textSize="11sp"
                         android:textStyle="bold" />
                 </LinearLayout>
+
                 <TextView
                     android:id="@+id/tv_advance_snippet"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:ellipsize="end"
+                    android:maxLines="2"
                     android:text="Resumen del avance..."
                     android:textColor="#64748B"
-                    android:textSize="12sp"
-                    android:maxLines="1"
-                    android:ellipsize="end" />
+                    android:textSize="12sp" />
             </LinearLayout>
         </LinearLayout>
 
@@ -99,36 +106,35 @@
             android:src="@drawable/ic_chevron_right_24"
             app:layout_constraintBottom_toBottomOf="@+id/header_layout"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/header_layout" />
+            app:layout_constraintTop_toTopOf="@+id/header_layout"
+            app:tint="#1E293B" />
 
-        <!-- CUERPO EXPANDIBLE (Oculto por defecto) -->
         <LinearLayout
             android:id="@+id/expanded_body"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
             android:orientation="vertical"
             android:visibility="gone"
-            android:layout_marginTop="16dp"
-            app:layout_constraintTop_toBottomOf="@id/header_layout"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent">
+            app:layout_constraintTop_toBottomOf="@id/header_layout">
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="#E2E8F0"
-                android:layout_marginBottom="12dp"/>
+                android:layout_marginBottom="12dp"
+                android:background="#E2E8F0" />
 
             <TextView
                 android:id="@+id/tv_advance_description_full"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:lineSpacingExtra="4dp"
                 android:text="Descripción completa del avance..."
                 android:textColor="#334155"
-                android:textSize="13sp"
-                android:lineSpacingExtra="4dp" />
+                android:textSize="13sp" />
 
-            <!-- Espacio para Documentos Adjuntos -->
             <TextView
                 android:id="@+id/tv_label_documents"
                 android:layout_width="wrap_content"
@@ -147,6 +153,7 @@
                 android:layout_marginTop="8dp"
                 android:scrollbars="none"
                 android:visibility="gone">
+
                 <LinearLayout
                     android:id="@+id/advance_images_container"
                     android:layout_width="wrap_content"
@@ -154,7 +161,6 @@
                     android:orientation="horizontal" />
             </HorizontalScrollView>
 
-            <!-- Espacio para Conversación / Observaciones -->
             <TextView
                 android:id="@+id/tv_label_comments"
                 android:layout_width="wrap_content"
@@ -199,6 +205,5 @@
                     app:tint="@color/ans_error" />
             </LinearLayout>
         </LinearLayout>
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>

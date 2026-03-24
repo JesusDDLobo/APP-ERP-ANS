@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="#F3F4F6"
+    android:background="@color/dashboard_background"
     android:paddingBottom="12dp">
 
     <androidx.cardview.widget.CardView
@@ -15,7 +15,7 @@
         android:layout_marginTop="8dp"
         android:layout_marginEnd="2dp"
         android:layout_marginBottom="18dp"
-        app:cardBackgroundColor="@color/dashboard_blue"
+        app:cardBackgroundColor="@color/dashboard_primary"
         app:cardCornerRadius="16dp"
         app:cardElevation="6dp">
 
@@ -28,7 +28,7 @@
                 android:id="@+id/coordinator_summary_icon_box"
                 android:layout_width="52dp"
                 android:layout_height="52dp"
-                app:cardBackgroundColor="#4DFFFFFF"
+                app:cardBackgroundColor="@color/dashboard_primary"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="0dp"
                 app:layout_constraintBottom_toBottomOf="parent"
@@ -121,7 +121,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="No hay subórdenes asignadas"
-            android:textColor="@color/ans_gray_1"
+            android:textColor="@color/dashboard_text_primary"
             android:textSize="18sp"
             android:textStyle="bold" />
 
@@ -131,7 +131,7 @@
             android:layout_marginTop="6dp"
             android:gravity="center"
             android:text="Cuando tengas subórdenes disponibles aparecerán aquí."
-            android:textColor="@color/ans_gray_3"
+            android:textColor="@color/dashboard_text_secondary"
             android:textSize="14sp" />
     </LinearLayout>
 

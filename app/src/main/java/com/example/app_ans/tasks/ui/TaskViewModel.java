@@ -12,6 +12,8 @@ import androidx.work.NetworkType;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
 
+
+
 import com.example.app_ans.auth.session.AuthSessionManager;
 import com.example.app_ans.core.network.NetworkModule;
 import com.example.app_ans.core.persistence.AppDatabase;
@@ -22,11 +24,14 @@ import com.example.app_ans.tasks.model.SubWorkOrderTasksResponse;
 import com.example.app_ans.tasks.model.Task;
 import com.example.app_ans.tasks.network.SyncLocationWorker;
 import com.example.app_ans.tasks.network.UploadAdvanceWorker;
+import com.example.app_ans.tasks.persistence.PendingRendition;
 import com.example.app_ans.tasks.persistence.TaskDraft;
 import com.example.app_ans.tasks.persistence.TaskEntity;
 import com.example.app_ans.tasks.persistence.TaskMapper;
 import com.example.app_ans.tasks.repository.TaskRepository;
+import com.google.gson.Gson;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -48,6 +53,9 @@ public class TaskViewModel extends AndroidViewModel {
 
     private final MutableLiveData<List<PendingAdvance>> pendingAdvancesLiveData = new MutableLiveData<>();
     public LiveData<List<PendingAdvance>> getPendingAdvances() { return pendingAdvancesLiveData; }
+
+    private final MutableLiveData<List<PendingRendition>> pendingRenditionsLiveData = new MutableLiveData<>();
+    public LiveData<List<PendingRendition>> getPendingRenditions() { return pendingRenditionsLiveData; }
 
     private final MutableLiveData<Task> taskDetailLiveData = new MutableLiveData<>();
     public LiveData<Task> getTaskDetail() { return taskDetailLiveData; }
@@ -71,6 +79,10 @@ public class TaskViewModel extends AndroidViewModel {
 
     public void loadPendingAdvances(int taskId) {
         executor.execute(() -> pendingAdvancesLiveData.postValue(db.pendingAdvanceDao().getByTaskId(taskId)));
+    }
+
+    public void loadPendingRenditions(int taskId) {
+        executor.execute(() -> pendingRenditionsLiveData.postValue(db.pendingRenditionDao().getByTaskId(taskId)));
     }
 
     public void saveAdvanceOffline(int taskId, String content, List<android.net.Uri> fileUris) {
@@ -98,6 +110,31 @@ public class TaskViewModel extends AndroidViewModel {
                 errorLiveData.postValue("Avance guardado localmente. Sincronizando...");
             } catch (Exception e) {
                 errorLiveData.postValue("Error al guardar localmente: " + e.getMessage());
+            }
+        });
+    }
+
+    public void saveRenditionOffline(int taskId, String renditionJson, List<android.net.Uri> fileUris) {
+        executor.execute(() -> {
+            try {
+                List<String> localPaths = FileStorageUtils.saveFilesLocally(getApplication(), fileUris);
+
+                Gson gson = new Gson();
+                String localFilesJson = gson.toJson(localPaths);
+
+                PendingRendition rendition = new PendingRendition(
+                        taskId,
+                        renditionJson,
+                        localFilesJson,
+                        System.currentTimeMillis()
+                );
+
+                db.pendingRenditionDao().insert(rendition);
+                loadPendingRenditions(taskId);
+
+                errorLiveData.postValue("Rendición guardada localmente");
+            } catch (Exception e) {
+                errorLiveData.postValue("Error al guardar rendición localmente: " + e.getMessage());
             }
         });
     }
@@ -332,7 +369,7 @@ public class TaskViewModel extends AndroidViewModel {
 
         executor.execute(() -> {
             try {
-                Task updatedTask = repository.submitAdvance(taskId, content, new java.util.ArrayList<>());
+                Task updatedTask = repository.submitAdvance(taskId, content, new ArrayList<>());
                 taskDetailLiveData.postValue(updatedTask);
                 loadTasks();
             } catch (Exception e) {
@@ -402,16 +439,16 @@ public class TaskViewModel extends AndroidViewModel {
     public void completeTask(
             int taskId,
             List<com.example.app_ans.tasks.network.dto.TaskCompletionAnswer> answers,
-            java.util.List<android.net.Uri> fileUris
+            List<android.net.Uri> fileUris
     ) {
         loadingLiveData.postValue(true);
 
         executor.execute(() -> {
             try {
-                com.google.gson.Gson gson = new com.google.gson.Gson();
+                Gson gson = new Gson();
                 String answersJson = gson.toJson(answers);
 
-                java.util.List<okhttp3.MultipartBody.Part> files = new java.util.ArrayList<>();
+                List<okhttp3.MultipartBody.Part> files = new ArrayList<>();
                 for (int i = 0; i < fileUris.size(); i++) {
                     android.net.Uri uri = fileUris.get(i);
                     okhttp3.MultipartBody.Part part = prepareFilePart("files[" + i + "]", uri);
@@ -439,9 +476,9 @@ public class TaskViewModel extends AndroidViewModel {
         try {
             android.content.Context context = getApplication().getApplicationContext();
 
-            java.util.List<android.net.Uri> uris = new java.util.ArrayList<>();
+            List<android.net.Uri> uris = new ArrayList<>();
             uris.add(fileUri);
-            java.util.List<String> savedPaths = FileStorageUtils.saveFilesLocally(context, uris);
+            List<String> savedPaths = FileStorageUtils.saveFilesLocally(context, uris);
 
             if (savedPaths.isEmpty()) return null;
 

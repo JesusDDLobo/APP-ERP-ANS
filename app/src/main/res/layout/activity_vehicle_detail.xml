@@ -4,13 +4,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/white">
+    android:background="@color/dashboard_background">
 
     <View
         android:id="@+id/header_background"
         android:layout_width="0dp"
         android:layout_height="120dp"
-        android:background="@color/dashboard_blue"
+        android:background="@color/dashboard_navbar"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -59,7 +59,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="18dp"
                 android:text="←  Volver al inicio"
-                android:textColor="@color/dashboard_blue"
+                android:textColor="@color/dashboard_navbar"
                 android:textSize="15sp"
                 android:textStyle="bold"
                 tools:ignore="HardcodedText" />
@@ -76,7 +76,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="24dp"
                     android:text="Detalle de Vehículo"
-                    android:textColor="@color/ans_primary_dark"
+                    android:textColor="@color/dashboard_primary"
                     android:textSize="22sp"
                     android:textStyle="bold"
                     tools:ignore="HardcodedText" />
@@ -89,7 +89,8 @@
                     android:layout_marginBottom="18dp"
                     android:contentDescription="Imagen del vehículo"
                     android:scaleType="centerInside"
-                    android:src="@drawable/vehicle" />
+                    android:src="@drawable/vehicle"
+                    app:tint="@color/dashboard_primary" />
 
                 <TextView
                     android:id="@+id/vehicle_plate"
@@ -97,7 +98,7 @@
                     android:layout_height="wrap_content"
                     android:gravity="center"
                     android:textAlignment="center"
-                    android:textColor="@color/ans_primary_dark"
+                    android:textColor="@color/dashboard_primary"
                     android:textSize="28sp"
                     android:textStyle="bold"
                     tools:text="HWK520" />
@@ -110,7 +111,7 @@
                     android:gravity="center"
                     android:textAlignment="center"
                     android:textAllCaps="true"
-                    android:textColor="#4E5A67"
+                    android:textColor="@color/dashboard_text_primary"
                     android:textSize="16sp"
                     tools:text="TOYOTA HILUX" />
 
@@ -121,7 +122,7 @@
                     android:layout_marginTop="6dp"
                     android:gravity="center"
                     android:textAlignment="center"
-                    android:textColor="#8A97A6"
+                    android:textColor="@color/dashboard_text_secondary"
                     android:textSize="14sp"
                     tools:text="2014" />
 
@@ -130,14 +131,14 @@
                     android:layout_height="1dp"
                     android:layout_marginTop="24dp"
                     android:layout_marginBottom="22dp"
-                    android:background="#E5E7EB" />
+                    android:background="@color/dashboard_border_light" />
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="18dp"
                     android:text="Información General"
-                    android:textColor="@color/ans_primary_dark"
+                    android:textColor="@color/dashboard_primary"
                     android:textSize="18sp"
                     android:textStyle="bold"
                     tools:ignore="HardcodedText" />
@@ -153,7 +154,7 @@
                         android:layout_width="110dp"
                         android:layout_height="wrap_content"
                         android:text="Tipo:"
-                        android:textColor="@color/ans_primary_dark"
+                        android:textColor="@color/dashboard_primary"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         tools:ignore="HardcodedText" />
@@ -164,7 +165,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:gravity="end"
-                        android:textColor="#4E5A67"
+                        android:textColor="@color/dashboard_text_primary"
                         android:textSize="16sp"
                         tools:text="Camioneta" />
                 </LinearLayout>
@@ -180,7 +181,7 @@
                         android:layout_width="110dp"
                         android:layout_height="wrap_content"
                         android:text="Odómetro:"
-                        android:textColor="@color/ans_primary_dark"
+                        android:textColor="@color/dashboard_primary"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         tools:ignore="HardcodedText" />
@@ -191,7 +192,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:gravity="end"
-                        android:textColor="#4E5A67"
+                        android:textColor="@color/dashboard_text_primary"
                         android:textSize="16sp"
                         tools:text="383742.9 Km" />
                 </LinearLayout>
@@ -207,7 +208,7 @@
                         android:layout_width="110dp"
                         android:layout_height="wrap_content"
                         android:text="Proveedor:"
-                        android:textColor="@color/ans_primary_dark"
+                        android:textColor="@color/dashboard_primary"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         tools:ignore="HardcodedText" />
@@ -218,7 +219,7 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:gravity="end"
-                        android:textColor="#4E5A67"
+                        android:textColor="@color/dashboard_text_primary"
                         android:textSize="16sp"
                         tools:text="ANS Comunicaciones S.A.S." />
                 </LinearLayout>
@@ -228,7 +229,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="28dp"
-                    android:background="#F5F6F8"
+                    android:background="@android:color/white"
                     android:orientation="vertical"
                     android:padding="18dp"
                     android:visibility="gone"
@@ -239,7 +240,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="14dp"
                         android:text="Estado de Mantenimiento"
-                        android:textColor="@color/ans_primary_dark"
+                        android:textColor="@color/dashboard_primary"
                         android:textSize="18sp"
                         android:textStyle="bold"
                         tools:ignore="HardcodedText" />
@@ -248,7 +249,7 @@
                         android:id="@+id/maintenance_due_status"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textColor="@color/ans_primary_dark"
+                        android:textColor="@color/dashboard_primary"
                         android:textSize="16sp"
                         android:textStyle="bold"
                         tools:text="Al día" />
@@ -258,7 +259,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
-                        android:textColor="#4E5A67"
+                        android:textColor="@color/dashboard_text_primary"
                         android:textSize="15sp"
                         tools:text="Próximo: 0.0 Km" />
 
@@ -267,7 +268,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
-                        android:textColor="#4E5A67"
+                        android:textColor="@color/dashboard_text_primary"
                         android:textSize="15sp"
                         tools:text="Faltan: 0.0 Km" />
                 </LinearLayout>
@@ -277,7 +278,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="52dp"
                     android:layout_marginTop="26dp"
-                    android:backgroundTint="@color/ans_primary"
+                    android:backgroundTint="@color/dashboard_primary"
                     android:text="Reportar Mantenimiento"
                     android:textAllCaps="false"
                     android:textColor="@color/white"
@@ -296,7 +297,7 @@
         android:layout_height="wrap_content"
         android:layout_margin="32dp"
         android:textAlignment="center"
-        android:textColor="@color/ans_secondary"
+        android:textColor="@color/dashboard_text_secondary"
         android:textSize="18sp"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"

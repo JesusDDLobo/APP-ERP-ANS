@@ -62,17 +62,6 @@ public class TaskRepository {
     private void updateTasksCache(List<Task> tasks) {
         for (Task task : tasks) {
             TaskEntity newEntity = TaskMapper.toEntity(task);
-
-            TaskEntity existing = db.taskDao().getTaskById(task.getId());
-            if (existing != null && existing.isRunning && newEntity.isRunning) {
-                long localSecs = com.example.app_ans.core.utils.DateUtils.parseDurationToSeconds(existing.totalTimeSpent);
-                long serverSecs = com.example.app_ans.core.utils.DateUtils.parseDurationToSeconds(newEntity.totalTimeSpent);
-
-                if (Math.abs(serverSecs - localSecs) > 3000 || localSecs > serverSecs) {
-                    newEntity.totalTimeSpent = existing.totalTimeSpent;
-                }
-            }
-
             db.taskDao().insertTask(newEntity);
         }
     }

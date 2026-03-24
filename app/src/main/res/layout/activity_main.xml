@@ -12,9 +12,8 @@
         android:id="@+id/header_background"
         android:layout_width="0dp"
         android:layout_height="120dp"
-        android:background="@color/dashboard_blue"
+        android:background="@color/dashboard_navbar"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -91,7 +90,7 @@
         android:id="@+id/dashboard_panel"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:cardBackgroundColor="@color/dashboard_background"
+        app:cardBackgroundColor="@android:color/transparent"
         app:cardCornerRadius="0dp"
         app:cardElevation="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -118,7 +117,7 @@
                 android:layout_height="116dp"
                 android:layout_columnWeight="1"
                 android:layout_margin="8dp"
-                app:cardBackgroundColor="@color/dashboard_blue"
+                app:cardBackgroundColor="@color/dashboard_primary"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="6dp">
 
@@ -135,7 +134,7 @@
                     <androidx.cardview.widget.CardView
                         android:layout_width="58dp"
                         android:layout_height="58dp"
-                        app:cardBackgroundColor="@color/dashboard_blue_light"
+                        app:cardBackgroundColor="@color/dashboard_primary"
                         app:cardCornerRadius="14dp"
                         app:cardElevation="0dp">
 
@@ -185,7 +184,7 @@
                     <androidx.cardview.widget.CardView
                         android:layout_width="58dp"
                         android:layout_height="58dp"
-                        app:cardBackgroundColor="@color/dashboard_blue"
+                        app:cardBackgroundColor="@color/dashboard_primary"
                         app:cardCornerRadius="14dp"
                         app:cardElevation="0dp">
 
@@ -206,7 +205,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:text="Vehículo"
-                        android:textColor="@color/dashboard_text_dark"
+                        android:textColor="@color/dashboard_text_primary"
                         android:textSize="16sp"
                         android:textStyle="bold" />
                 </LinearLayout>
@@ -218,7 +217,7 @@
                 android:layout_height="116dp"
                 android:layout_columnWeight="1"
                 android:layout_margin="8dp"
-                app:cardBackgroundColor="@color/dashboard_blue"
+                app:cardBackgroundColor="@color/dashboard_primary"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="6dp">
 
@@ -235,7 +234,7 @@
                     <androidx.cardview.widget.CardView
                         android:layout_width="58dp"
                         android:layout_height="58dp"
-                        app:cardBackgroundColor="@android:color/white"
+                        app:cardBackgroundColor="@color/dashboard_primary"
                         app:cardCornerRadius="14dp"
                         app:cardElevation="0dp">
 
@@ -248,7 +247,7 @@
                             android:padding="7dp"
                             android:scaleType="centerInside"
                             android:src="@drawable/hotel"
-                            app:tint="@color/dashboard_blue" />
+                            app:tint="@android:color/white" />
                     </androidx.cardview.widget.CardView>
 
                     <TextView
@@ -286,7 +285,7 @@
                     <androidx.cardview.widget.CardView
                         android:layout_width="58dp"
                         android:layout_height="58dp"
-                        app:cardBackgroundColor="@color/dashboard_blue"
+                        app:cardBackgroundColor="@color/dashboard_primary"
                         app:cardCornerRadius="14dp"
                         app:cardElevation="0dp">
 
@@ -307,7 +306,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="12dp"
                         android:text="Rendiciones"
-                        android:textColor="@color/dashboard_text_dark"
+                        android:textColor="@color/dashboard_text_primary"
                         android:textSize="16sp"
                         android:textStyle="bold" />
                 </LinearLayout>

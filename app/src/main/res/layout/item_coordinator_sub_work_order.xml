@@ -9,7 +9,7 @@
     app:cardBackgroundColor="@android:color/white"
     app:cardCornerRadius="16dp"
     app:cardElevation="4dp"
-    app:strokeColor="#E4E7EC"
+    app:strokeColor="@color/dashboard_border_light"
     app:strokeWidth="1dp">
 
     <LinearLayout
@@ -22,18 +22,16 @@
         <androidx.cardview.widget.CardView
             android:layout_width="48dp"
             android:layout_height="48dp"
-            app:cardBackgroundColor="@android:color/white"
+            app:cardBackgroundColor="@color/dashboard_primary"
             app:cardCornerRadius="12dp"
-            app:cardElevation="0dp"
-            app:strokeColor="#E4E7EC"
-            app:strokeWidth="1dp">
+            app:cardElevation="0dp">
 
             <ImageView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:padding="12dp"
                 android:src="@drawable/tasks"
-                app:tint="@color/black" />
+                app:tint="@android:color/white" />
         </androidx.cardview.widget.CardView>
 
         <LinearLayout
@@ -49,7 +47,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="SOT-0036"
-                android:textColor="@color/dashboard_blue"
+                android:textColor="@color/dashboard_primary"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
@@ -59,7 +57,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:text="JDD - 02"
-                android:textColor="@color/ans_gray_4"
+                android:textColor="@color/dashboard_text_primary"
                 android:textSize="17sp"
                 android:textStyle="bold" />
 
@@ -69,7 +67,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:text="17/03/2026 11:34"
-                android:textColor="@color/ans_gray_4"
+                android:textColor="@color/dashboard_text_secondary"
                 android:textSize="14sp" />
 
             <TextView
@@ -78,7 +76,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="6dp"
                 android:text="OT-0002"
-                android:textColor="@color/ans_gray_4"
+                android:textColor="@color/dashboard_text_primary"
                 android:textSize="15sp"
                 android:textStyle="bold" />
 
@@ -88,7 +86,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:text="Jesús David Díaz Lobo"
-                android:textColor="@color/ans_gray_4"
+                android:textColor="@color/dashboard_text_secondary"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 

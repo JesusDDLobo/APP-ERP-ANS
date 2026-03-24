@@ -27,6 +27,8 @@ import com.example.app_ans.auth.ui.PasswordSetupDialog;
 import com.example.app_ans.core.network.NetworkModule;
 import com.example.app_ans.core.ui.NavbarUtils;
 import com.example.app_ans.databinding.ActivityMainBinding;
+import com.example.app_ans.tasks.ui.RenditionsActivity; // 🔥 IMPORTANTE
+
 import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.HashMap;
@@ -38,6 +40,7 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
+
     private ActivityMainBinding binding;
     private AuthViewModel authViewModel;
     private AuthSessionManager sessionManager;
@@ -47,6 +50,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         EdgeToEdge.enable(this);
         setContentView(binding.getRoot());
@@ -63,10 +67,12 @@ public class MainActivity extends AppCompatActivity {
                 });
 
         sessionManager = new AuthSessionManager(this);
+
         AuthRepository repository = new AuthRepository(
                 NetworkModule.provideAuthApi(this, sessionManager),
                 sessionManager
         );
+
         authViewModel = new ViewModelProvider(this, new AuthViewModelFactory(repository))
                 .get(AuthViewModel.class);
 
@@ -88,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
         handleTaskRedirect(intent);
     }
 
+    // 🔹 ROLES
     private void resolveRoleAccess() {
         UserSession session = sessionManager.restoreSession();
         String role = session != null ? session.getRole() : null;
@@ -101,6 +108,7 @@ public class MainActivity extends AppCompatActivity {
         return normalized.equals("administrador") || normalized.equals("admin");
     }
 
+    // 🔹 INTERNET
     private void refreshSessionIfOnline() {
         if (hasInternetConnection()) {
             authViewModel.refreshSession();
@@ -112,6 +120,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean hasInternetConnection() {
         ConnectivityManager cm =
                 (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+
         if (cm == null) return false;
 
         Network network = cm.getActiveNetwork();
@@ -123,19 +132,22 @@ public class MainActivity extends AppCompatActivity {
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
     }
 
+    // 🔹 REDIRECCIÓN A TAREA
     private void handleTaskRedirect(Intent intent) {
         if (intent != null && (intent.hasExtra("TASK_ID") || intent.hasExtra("task_id"))) {
-            int taskId = intent.getIntExtra("TASK_ID", intent.getIntExtra("task_id", -1));
+
+            int taskId = intent.getIntExtra("TASK_ID",
+                    intent.getIntExtra("task_id", -1));
 
             if (taskId == -1) {
                 String taskIdStr = intent.getStringExtra("TASK_ID");
-                if (taskIdStr == null) taskIdStr = intent.getStringExtra("task_id");
+                if (taskIdStr == null)
+                    taskIdStr = intent.getStringExtra("task_id");
 
                 if (taskIdStr != null) {
                     try {
                         taskId = Integer.parseInt(taskIdStr);
-                    } catch (NumberFormatException ignored) {
-                    }
+                    } catch (NumberFormatException ignored) {}
                 }
             }
 
@@ -151,20 +163,20 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // 🔹 PERMISOS
     private void requestNotificationPermission() {
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             if (androidx.core.content.ContextCompat.checkSelfPermission(
                     this,
                     android.Manifest.permission.POST_NOTIFICATIONS
             ) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                Log.d("FCM", "Requesting POST_NOTIFICATIONS permission");
+
                 requestNotificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS);
-            } else {
-                Log.d("FCM", "POST_NOTIFICATIONS permission already granted");
             }
         }
     }
 
+    // 🔹 UI
     private void setupUi() {
         applyRoleAccess();
 
@@ -176,26 +188,34 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void applyRoleAccess() {
+
         binding.dashboardPanel.setVisibility(android.view.View.VISIBLE);
         binding.tasksButton.setVisibility(android.view.View.VISIBLE);
         binding.hotelButton.setVisibility(android.view.View.VISIBLE);
         binding.vehicleButton.setVisibility(android.view.View.VISIBLE);
         binding.renditionsCard.setVisibility(android.view.View.VISIBLE);
 
+        // TAREAS
         binding.tasksButton.setOnClickListener(v ->
                 startActivity(new Intent(this, TasksActivity.class)));
 
+        // HOTEL
         binding.hotelButton.setOnClickListener(v ->
                 startActivity(new Intent(this, HotelActivity.class)));
 
+        // VEHÍCULO
         binding.vehicleButton.setOnClickListener(v ->
-                startActivity(new Intent(this, com.example.app_ans.vehicles.ui.VehicleDetailActivity.class)));
+                startActivity(new Intent(this,
+                        com.example.app_ans.vehicles.ui.VehicleDetailActivity.class)));
 
+        // 🔥 RENDICIONES (AQUÍ ESTÁ LO NUEVO)
         binding.renditionsButton.setOnClickListener(v ->
-                Toast.makeText(this, "Rendiciones próximamente", Toast.LENGTH_SHORT).show());
+                startActivity(new Intent(this, RenditionsActivity.class)));
     }
 
+    // 🔹 OBSERVERS
     private void observeViewModel() {
+
         authViewModel.getError().observe(this, msg -> {
             if (msg != null) {
                 Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
@@ -204,8 +224,10 @@ public class MainActivity extends AppCompatActivity {
 
         authViewModel.getRefreshSessionResult().observe(this, session -> {
             if (session != null) {
+
                 String oldRole = null;
                 UserSession current = sessionManager.restoreSession();
+
                 if (current != null) {
                     oldRole = current.getRole();
                 }
@@ -216,8 +238,10 @@ public class MainActivity extends AppCompatActivity {
                 handleTaskRedirect(getIntent());
 
                 String newRole = session.getRole();
+
                 if ((oldRole == null && newRole != null) ||
-                        (oldRole != null && !oldRole.equalsIgnoreCase(newRole != null ? newRole : ""))) {
+                        (oldRole != null && !oldRole.equalsIgnoreCase(newRole))) {
+
                     Toast.makeText(this, "Sesión actualizada", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -226,7 +250,9 @@ public class MainActivity extends AppCompatActivity {
         authViewModel.getLogoutResult().observe(this, success -> {
             if (Boolean.TRUE.equals(success)) {
                 Intent intent = new Intent(this, AuthActivity.class);
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP |
+                        Intent.FLAG_ACTIVITY_NEW_TASK |
+                        Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();
             }
@@ -246,8 +272,12 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    // 🔹 FLAGS
     private void handleIncomingFlags() {
-        boolean mustChangePassword = getIntent().getBooleanExtra("must_change_password", false);
+
+        boolean mustChangePassword =
+                getIntent().getBooleanExtra("must_change_password", false);
+
         if (mustChangePassword) {
             binding.passwordBanner.setVisibility(android.view.View.VISIBLE);
             binding.passwordBannerButton.setOnClickListener(v -> showPasswordSetupDialog());
@@ -255,13 +285,20 @@ public class MainActivity extends AppCompatActivity {
 
         String googleStatus = getIntent().getStringExtra("google_services_status");
         boolean requiresAck = getIntent().getBooleanExtra("google_requires_ack", false);
+
         if (googleStatus != null && !"ok".equalsIgnoreCase(googleStatus)) {
             binding.googleStatusBanner.setVisibility(android.view.View.VISIBLE);
             binding.googleStatusMessage.setText(
                     getIntent().getStringExtra("google_services_message")
             );
-            binding.googleStatusAcknowledge.setVisibility(requiresAck ? android.view.View.VISIBLE : android.view.View.GONE);
-            binding.googleStatusAcknowledge.setOnClickListener(v -> authViewModel.acknowledgeGoogleStatus());
+
+            binding.googleStatusAcknowledge.setVisibility(
+                    requiresAck ? android.view.View.VISIBLE : android.view.View.GONE
+            );
+
+            binding.googleStatusAcknowledge.setOnClickListener(
+                    v -> authViewModel.acknowledgeGoogleStatus()
+            );
         }
     }
 
@@ -271,15 +308,20 @@ public class MainActivity extends AppCompatActivity {
         dialog.show(getSupportFragmentManager(), "password_setup");
     }
 
+    // 🔹 FCM
     private void registerFCMToken() {
-        FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token -> {
-            if (token != null) {
-                sendFCMTokenToBackend(token);
-            }
-        }).addOnFailureListener(e -> Log.e("FCM", "Failed to get FCM token", e));
+        FirebaseMessaging.getInstance().getToken()
+                .addOnSuccessListener(token -> {
+                    if (token != null) {
+                        sendFCMTokenToBackend(token);
+                    }
+                })
+                .addOnFailureListener(e ->
+                        Log.e("FCM", "Failed to get FCM token", e));
     }
 
     private void sendFCMTokenToBackend(String fcmToken) {
+
         AuthApi authApi = NetworkModule.provideAuthApi(this, sessionManager);
 
         Map<String, Object> payload = new HashMap<>();
@@ -287,20 +329,24 @@ public class MainActivity extends AppCompatActivity {
         payload.put("device_name", android.os.Build.MODEL);
         payload.put("device_id", android.os.Build.ID);
 
-        authApi.registerFCMToken(payload).enqueue(new Callback<Map<String, Object>>() {
-            @Override
-            public void onResponse(Call<Map<String, Object>> call, Response<Map<String, Object>> response) {
-                if (response.isSuccessful()) {
-                    Log.i("FCM", "FCM token registered successfully");
-                } else {
-                    Log.w("FCM", "Failed to register FCM token: " + response.code());
-                }
-            }
+        authApi.registerFCMToken(payload)
+                .enqueue(new Callback<Map<String, Object>>() {
 
-            @Override
-            public void onFailure(Call<Map<String, Object>> call, Throwable t) {
-                Log.e("FCM", "Error registering FCM token", t);
-            }
-        });
+                    @Override
+                    public void onResponse(Call<Map<String, Object>> call,
+                                           Response<Map<String, Object>> response) {
+
+                        if (response.isSuccessful()) {
+                            Log.i("FCM", "FCM token registered successfully");
+                        } else {
+                            Log.w("FCM", "Failed to register FCM token: " + response.code());
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<Map<String, Object>> call, Throwable t) {
+                        Log.e("FCM", "Error registering FCM token", t);
+                    }
+                });
     }
 }

@@ -59,7 +59,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
                     android:text="OT-0002"
-                    android:textColor="@color/dashboard_blue"
+                    android:textColor="@color/dashboard_navbar"
                     android:textSize="14sp"
                     android:textStyle="bold" />
             </LinearLayout>

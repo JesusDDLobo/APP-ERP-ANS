@@ -6,6 +6,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -43,7 +44,6 @@ public class TaskAdvanceAdapter extends RecyclerView.Adapter<TaskAdvanceAdapter.
             return;
         }
 
-        // Sort server advances descending (newest first)
         List<TaskAdvance> sorted = new ArrayList<>(advances);
         sorted.sort((a, b) -> {
             String dateA = a.getCreatedAt();
@@ -54,19 +54,20 @@ public class TaskAdvanceAdapter extends RecyclerView.Adapter<TaskAdvanceAdapter.
             if (dateB == null) return -1;
 
             try {
-                java.time.LocalDateTime dtA = parseDate(dateA);
-                java.time.LocalDateTime dtB = parseDate(dateB);
-                return dtB.compareTo(dtA); // Descending (newest first)
+                java.time.OffsetDateTime dtA = parseOffsetDate(dateA);
+                java.time.OffsetDateTime dtB = parseOffsetDate(dateB);
+                return dtB.compareTo(dtA);
             } catch (Exception e) {
                 return dateB.compareTo(dateA);
             }
         });
+
         this.advances = sorted;
         applyFilter();
     }
 
     public void filter(String query) {
-        this.currentQuery = query.toLowerCase().trim();
+        this.currentQuery = query != null ? query.toLowerCase().trim() : "";
         applyFilter();
     }
 
@@ -77,11 +78,20 @@ public class TaskAdvanceAdapter extends RecyclerView.Adapter<TaskAdvanceAdapter.
             filteredAdvances = new ArrayList<>();
             for (TaskAdvance advance : advances) {
                 boolean matches = false;
-                if (advance.getContent() != null && advance.getContent().toLowerCase().contains(currentQuery)) {
-                    matches = true;
-                } else if (advance.getUser() != null && advance.getUser().getName().toLowerCase().contains(currentQuery)) {
-                    matches = true;
-                } else if (advance.getCreatedAt() != null && advance.getCreatedAt().toLowerCase().contains(currentQuery)) {
+
+                String comment = safeLower(advance.getComment());
+                String author = advance.getUser() != null ? safeLower(advance.getUser().getName()) : "";
+                String createdAt = safeLower(advance.getCreatedAt());
+                String createdAtDate = safeLower(advance.getCreatedAtDate());
+                String createdAtTime = safeLower(advance.getCreatedAtTime());
+                String createdAtFormatted = safeLower(advance.getCreatedAtFormatted());
+
+                if (comment.contains(currentQuery)
+                        || author.contains(currentQuery)
+                        || createdAt.contains(currentQuery)
+                        || createdAtDate.contains(currentQuery)
+                        || createdAtTime.contains(currentQuery)
+                        || createdAtFormatted.contains(currentQuery)) {
                     matches = true;
                 }
 
@@ -93,35 +103,33 @@ public class TaskAdvanceAdapter extends RecyclerView.Adapter<TaskAdvanceAdapter.
         notifyDataSetChanged();
     }
 
-    private java.time.LocalDateTime parseDate(String dateStr) {
-        if (dateStr == null) return java.time.LocalDateTime.MIN;
-        String normalized = dateStr.replace(" ", "T");
-        if (normalized.contains(".")) {
-            normalized = normalized.substring(0, normalized.indexOf("."));
+    private String safeLower(String value) {
+        return value != null ? value.toLowerCase() : "";
+    }
+
+    private java.time.OffsetDateTime parseOffsetDate(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty()) {
+            return java.time.OffsetDateTime.MIN;
         }
 
         try {
-            // Case 1: YYYY-MM-DD...
-            if (normalized.contains("-") && normalized.indexOf("-") == 4) {
-                 if (normalized.length() == 16) normalized += ":00";
-                 return java.time.LocalDateTime.parse(normalized);
-            }
-            // Case 2: DD-MM-YYYY...
-            String pattern = "dd-MM-yyyy'T'HH:mm";
-            if (normalized.length() >= 19) pattern = "dd-MM-yyyy'T'HH:mm:ss";
-            else if (normalized.length() == 16) pattern = "dd-MM-yyyy'T'HH:mm";
-            else if (normalized.length() == 10) normalized += "T00:00";
-
-            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern(pattern);
-            return java.time.LocalDateTime.parse(normalized, formatter);
-        } catch (Exception e) {
-            android.util.Log.e("TaskAdvanceAdapter", "Error parsing date: " + dateStr, e);
-            return java.time.LocalDateTime.MIN;
+            return java.time.OffsetDateTime.parse(dateStr);
+        } catch (Exception ignored) {
         }
+
+        try {
+            String normalized = dateStr.replace(" ", "T");
+            if (normalized.length() == 19) {
+                normalized += "Z";
+            }
+            return java.time.OffsetDateTime.parse(normalized);
+        } catch (Exception ignored) {
+        }
+
+        return java.time.OffsetDateTime.MIN;
     }
 
     public void setPendingAdvances(List<PendingAdvance> pendingAdvances) {
-        // Sort pending descending (newest first)
         List<PendingAdvance> sorted = new ArrayList<>(pendingAdvances);
         sorted.sort((a, b) -> Long.compare(b.getCreatedAt(), a.getCreatedAt()));
         this.pendingAdvances = sorted;
@@ -152,6 +160,7 @@ public class TaskAdvanceAdapter extends RecyclerView.Adapter<TaskAdvanceAdapter.
             } else {
                 holder.tvDate.setText("Pendiente");
                 holder.tvTime.setText("---");
+                holder.tvDate.setTextColor(holder.itemView.getContext().getColor(R.color.ans_gray_3));
             }
 
             holder.tvSnippet.setText(pending.getContent());
@@ -175,47 +184,63 @@ public class TaskAdvanceAdapter extends RecyclerView.Adapter<TaskAdvanceAdapter.
             int advanceIndex = position - pendingAdvances.size();
             TaskAdvance advance = filteredAdvances.get(advanceIndex);
 
-            String authorName = (advance.getUser() != null) ? advance.getUser().getName() : "Técnico";
+            String authorName = (advance.getUser() != null && advance.getUser().getName() != null)
+                    ? advance.getUser().getName()
+                    : "Técnico";
             holder.tvAuthor.setText(authorName);
 
-            String dateStr = advance.getCreatedAt();
-            holder.tvDate.setText(DateUtils.formatDateOnly(dateStr));
-            holder.tvTime.setText(DateUtils.formatTimeOnly(dateStr));
+            String dateText = advance.getCreatedAtDate();
+            String timeText = advance.getCreatedAtTime();
 
-            holder.tvSnippet.setText(advance.getContent());
-            holder.tvDescriptionFull.setText(advance.getContent());
+            if (dateText == null || dateText.trim().isEmpty()) {
+                dateText = DateUtils.formatDateOnly(advance.getCreatedAt());
+            }
+            if (timeText == null || timeText.trim().isEmpty()) {
+                timeText = DateUtils.formatTimeOnly(advance.getCreatedAt());
+            }
+
+            holder.tvDate.setText(dateText != null ? dateText : "");
+            holder.tvTime.setText(timeText != null ? timeText : "");
+
+            String comment = advance.getComment() != null ? advance.getComment() : "";
+            holder.tvSnippet.setText(comment);
+            holder.tvDescriptionFull.setText(comment);
             holder.itemView.setAlpha(1.0f);
 
-            // Snippet only visible when NOT expanded
             holder.tvSnippet.setVisibility(isExpanded ? View.GONE : View.VISIBLE);
 
-            // Check 10-minute window for delete
             if (isWithinTenMinutes(advance.getCreatedAt())) {
                 holder.btnDelete.setVisibility(View.VISIBLE);
-                holder.btnDelete.setOnClickListener(v -> { if (listener != null) listener.onDelete(advance); });
+                holder.btnDelete.setOnClickListener(v -> {
+                    if (listener != null) listener.onDelete(advance);
+                });
             } else {
                 holder.btnDelete.setVisibility(View.GONE);
             }
 
-            // Show remote files
             holder.imagesContainer.removeAllViews();
             if (advance.getFiles() != null && !advance.getFiles().isEmpty()) {
                 holder.imagesScroll.setVisibility(View.VISIBLE);
                 holder.docsLabel.setVisibility(View.VISIBLE);
+
                 for (TaskAdvance.AdvanceFile file : advance.getFiles()) {
-                    addFileThumbnail(holder.imagesContainer, file.getThumbnailUrl() != null ? file.getThumbnailUrl() : file.getUrl(), file.getMimeType(), file.getUrl());
+                    addFileThumbnail(
+                            holder.imagesContainer,
+                            file.getThumbnailUrl() != null ? file.getThumbnailUrl() : file.getUrl(),
+                            file.getMimeType(),
+                            file.getUrl()
+                    );
                 }
             } else {
                 holder.imagesScroll.setVisibility(View.GONE);
                 holder.docsLabel.setVisibility(View.GONE);
             }
 
-            // Show comments
             holder.commentsContainer.removeAllViews();
             if (advance.getComments() != null && !advance.getComments().isEmpty()) {
                 holder.commentsLabel.setVisibility(View.VISIBLE);
-                for (TaskAdvance.Comment comment : advance.getComments()) {
-                    addCommentView(holder.commentsContainer, comment);
+                for (TaskAdvance.Comment commentItem : advance.getComments()) {
+                    addCommentView(holder.commentsContainer, commentItem);
                 }
             } else {
                 holder.commentsLabel.setVisibility(View.GONE);
@@ -235,18 +260,13 @@ public class TaskAdvanceAdapter extends RecyclerView.Adapter<TaskAdvanceAdapter.
     }
 
     private boolean isWithinTenMinutes(String createdAt) {
-        if (createdAt == null) return false;
+        if (createdAt == null || createdAt.trim().isEmpty()) return false;
+
         try {
-            // Handle both T and space separators
-            String normalized = createdAt.replace(" ", "T");
-            if (normalized.contains(".")) {
-                normalized = normalized.substring(0, normalized.indexOf("."));
-            }
-            
-            java.time.OffsetDateTime created = java.time.ZonedDateTime.parse(normalized + "Z", 
-                java.time.format.DateTimeFormatter.ISO_DATE_TIME).toOffsetDateTime();
-            java.time.OffsetDateTime now = java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC);
-            
+            java.time.OffsetDateTime created = parseOffsetDate(createdAt);
+            if (created.equals(java.time.OffsetDateTime.MIN)) return false;
+
+            java.time.OffsetDateTime now = java.time.OffsetDateTime.now();
             return java.time.Duration.between(created, now).toMinutes() <= 10;
         } catch (Exception e) {
             return false;
@@ -263,7 +283,6 @@ public class TaskAdvanceAdapter extends RecyclerView.Adapter<TaskAdvanceAdapter.
         }
         String baseUrl = com.example.app_ans.BuildConfig.API_BASE_URL;
         if (baseUrl == null || baseUrl.isEmpty() || baseUrl.equals("null")) {
-            // Fallback just in case
             return url;
         }
         if (url.startsWith("/")) {
@@ -291,8 +310,7 @@ public class TaskAdvanceAdapter extends RecyclerView.Adapter<TaskAdvanceAdapter.
         imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
         imageView.setClipToOutline(true);
         imageView.setBackgroundResource(R.drawable.bg_status_chip);
-        
-        // Better MimeType detection for thumbnails
+
         String effectiveMimeType = mimeType;
         if (effectiveMimeType == null && thumbnailOrUrl != null) {
             String lowercaseUrl = thumbnailOrUrl.toLowerCase();
@@ -301,20 +319,18 @@ public class TaskAdvanceAdapter extends RecyclerView.Adapter<TaskAdvanceAdapter.
             else if (lowercaseUrl.contains(".pdf")) effectiveMimeType = "application/pdf";
         }
 
-        // If it's a Drive thumbnail, it might not have an extension but it's likely an image
         boolean isLikelyImage = (effectiveMimeType != null && effectiveMimeType.startsWith("image/"))
-                               || (thumbnailOrUrl.contains("googleusercontent.com") && thumbnailOrUrl.contains("drive-storage"));
+                || (thumbnailOrUrl.contains("googleusercontent.com") && thumbnailOrUrl.contains("drive-storage"));
 
         if (isLikelyImage) {
             com.bumptech.glide.Glide.with(context)
-                .load(absoluteThumbnail)
-                .centerCrop()
-                .placeholder(android.R.drawable.ic_menu_gallery)
-                .error(android.R.drawable.ic_menu_report_image)
-                .into(imageView);
+                    .load(absoluteThumbnail)
+                    .centerCrop()
+                    .placeholder(android.R.drawable.ic_menu_gallery)
+                    .error(android.R.drawable.ic_menu_report_image)
+                    .into(imageView);
         } else {
-            // Show icon for non-image files
-            int iconRes = android.R.drawable.ic_menu_save; // Default
+            int iconRes = android.R.drawable.ic_menu_save;
             if (mimeType != null) {
                 if (mimeType.contains("pdf")) iconRes = android.R.drawable.ic_menu_view;
                 else if (mimeType.contains("word") || mimeType.contains("officedocument.wordprocessingml")) iconRes = android.R.drawable.ic_menu_edit;
@@ -329,7 +345,7 @@ public class TaskAdvanceAdapter extends RecyclerView.Adapter<TaskAdvanceAdapter.
         imageView.setOnClickListener(v -> {
             if (listener != null) listener.onFileClick(absoluteFull, finalMimeType);
         });
-        
+
         container.addView(imageView);
     }
 
@@ -341,7 +357,17 @@ public class TaskAdvanceAdapter extends RecyclerView.Adapter<TaskAdvanceAdapter.
         TextView text = commentView.findViewById(R.id.tv_comment_content);
 
         author.setText(comment.getUser() != null ? comment.getUser().getName() : "Usuario");
-        date.setText(DateUtils.formatDateTime(comment.getCreatedAt()));
+
+        String formattedDate = comment.getCreatedAtFormatted();
+        if (formattedDate == null || formattedDate.trim().isEmpty()) {
+            if (comment.getCreatedAtDate() != null && comment.getCreatedAtTime() != null) {
+                formattedDate = comment.getCreatedAtDate() + " " + comment.getCreatedAtTime();
+            } else {
+                formattedDate = DateUtils.formatDateTime(comment.getCreatedAt());
+            }
+        }
+
+        date.setText(formattedDate != null ? formattedDate : "");
         text.setText(comment.getComment());
 
         container.addView(commentView);
@@ -349,7 +375,8 @@ public class TaskAdvanceAdapter extends RecyclerView.Adapter<TaskAdvanceAdapter.
 
     @Override
     public int getItemCount() {
-        return (filteredAdvances != null ? filteredAdvances.size() : 0) + (pendingAdvances != null ? pendingAdvances.size() : 0);
+        return (filteredAdvances != null ? filteredAdvances.size() : 0)
+                + (pendingAdvances != null ? pendingAdvances.size() : 0);
     }
 
     static class ViewHolder extends RecyclerView.ViewHolder {

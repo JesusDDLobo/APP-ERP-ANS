@@ -17,6 +17,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.app_ans.R;
+import com.example.app_ans.core.utils.DateUtils;
 import com.example.app_ans.tasks.model.Task;
 
 import java.util.List;
@@ -137,24 +138,22 @@ public class SubWorkOrderTasksFragment extends Fragment {
 
         taskId.setText(task.getPublicId() != null ? task.getPublicId() : "Sin ID");
 
-        String name = task.getContent() != null && task.getContent().getName() != null
-                ? task.getContent().getName()
+        String name = task.getName() != null && !task.getName().trim().isEmpty()
+                ? task.getName()
                 : "Sin nombre";
         taskName.setText(name);
 
-        String start = task.getContent() != null && task.getContent().getStartTime() != null
-                ? task.getContent().getStartTime()
+        String start = task.getStartTime() != null
+                ? DateUtils.formatDateTime(task.getStartTime())
                 : "-";
-        String end = task.getContent() != null && task.getContent().getEndTime() != null
-                ? task.getContent().getEndTime()
+        String end = task.getEndTime() != null
+                ? DateUtils.formatDateTime(task.getEndTime())
                 : "-";
         taskDate.setText("Inicio: " + start + "\nFin: " + end);
 
-        if (task.getContent() != null
-                && task.getContent().getDescription() != null
-                && !task.getContent().getDescription().trim().isEmpty()) {
+        if (task.getDescription() != null && !task.getDescription().trim().isEmpty()) {
             taskDescription.setVisibility(View.VISIBLE);
-            taskDescription.setText(task.getContent().getDescription());
+            taskDescription.setText(task.getDescription());
         } else {
             taskDescription.setVisibility(View.GONE);
         }
@@ -179,9 +178,31 @@ public class SubWorkOrderTasksFragment extends Fragment {
 
         applyStatusStyle(statusChip, status);
 
-        itemView.setOnClickListener(v ->
-                Toast.makeText(requireContext(), task.getPublicId(), Toast.LENGTH_SHORT).show()
-        );
+        itemView.setClickable(true);
+        itemView.setFocusable(true);
+        itemView.setOnClickListener(v -> openTaskDetail(task));
+    }
+
+    private void openTaskDetail(Task task) {
+        if (task == null || !isAdded()) return;
+
+        Toast.makeText(requireContext(), "Abriendo " + task.getPublicId(), Toast.LENGTH_SHORT).show();
+
+        View root = requireView();
+        View parent = (View) root.getParent();
+        int containerId = parent != null ? parent.getId() : View.NO_ID;
+
+        if (containerId == View.NO_ID) {
+            Toast.makeText(requireContext(), "Contenedor inválido", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        requireActivity()
+                .getSupportFragmentManager()
+                .beginTransaction()
+                .replace(containerId, TaskDetailFragment.newInstance(task, true))
+                .addToBackStack("task_detail")
+                .commitAllowingStateLoss();
     }
 
     private void applyStatusStyle(TextView statusChip, String status) {

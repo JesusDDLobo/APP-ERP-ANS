@@ -9,7 +9,7 @@
         android:id="@+id/header_background"
         android:layout_width="0dp"
         android:layout_height="120dp"
-        android:background="@color/dashboard_blue"
+        android:background="@color/dashboard_navbar"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
