@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="12dp"
-    app:cardBackgroundColor="@android:color/white"
+    app:cardBackgroundColor="#EEF2F6"
     app:cardCornerRadius="16dp"
     app:cardElevation="4dp">
 
@@ -43,7 +43,7 @@
                     android:id="@+id/tv_task_title"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Nombre tarea"
+                    android:text="24-03-2026"
                     android:textColor="@color/dashboard_text_primary"
                     android:textSize="15sp"
                     android:textStyle="bold" />
@@ -53,7 +53,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="TK-0001"
+                    android:text="3 rendiciones"
                     android:textColor="@color/dashboard_text_secondary"
                     android:textSize="13sp" />
 
@@ -62,9 +62,9 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:text="Total: $0"
+                    android:text="$0"
                     android:textColor="@color/dashboard_primary"
-                    android:textSize="13sp"
+                    android:textSize="15sp"
                     android:textStyle="bold" />
             </LinearLayout>
 

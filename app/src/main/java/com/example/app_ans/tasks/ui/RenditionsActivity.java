@@ -51,18 +51,33 @@ public class RenditionsActivity extends AppCompatActivity {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Gson gson = new Gson();
 
+    private int openTaskId = -1;
+    private String openRenditionJson = null;
+    private long openCreatedAt = -1L;
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = ActivityRenditionsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        readIncomingExtras();
         setupAuth();
         setupNavbar();
         setupHeaderActions();
         setupRecycler();
         setupSearch();
+        setupBackStackListener();
         loadLocalRenditions();
+    }
+
+    private void readIncomingExtras() {
+        Intent intent = getIntent();
+        if (intent == null) return;
+
+        openTaskId = intent.getIntExtra("open_task_id", -1);
+        openRenditionJson = intent.getStringExtra("open_rendition_json");
+        openCreatedAt = intent.getLongExtra("open_created_at", -1L);
     }
 
     private void setupAuth() {
@@ -93,14 +108,12 @@ public class RenditionsActivity extends AppCompatActivity {
     }
 
     private void setupNavbar() {
-        // Sin título para que no salga "Rendiciones" debajo de "Hola, Usuario!"
         NavbarUtils.setupNavbar(
                 this,
                 null,
                 () -> authViewModel.logout(this)
         );
 
-        // Ocultar flecha superior del navbar
         View backButton = findViewById(R.id.navbar_back_button);
         if (backButton != null) {
             backButton.setVisibility(View.GONE);
@@ -109,6 +122,11 @@ public class RenditionsActivity extends AppCompatActivity {
 
     private void setupHeaderActions() {
         binding.backRow.setOnClickListener(v -> {
+            if (binding.detailContainer.getVisibility() == View.VISIBLE) {
+                getSupportFragmentManager().popBackStack();
+                return;
+            }
+
             Intent intent = new Intent(this, MainActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
             startActivity(intent);
@@ -137,6 +155,15 @@ public class RenditionsActivity extends AppCompatActivity {
         });
     }
 
+    private void setupBackStackListener() {
+        getSupportFragmentManager().addOnBackStackChangedListener(() -> {
+            boolean showingDetail = getSupportFragmentManager().getBackStackEntryCount() > 0;
+
+            binding.detailContainer.setVisibility(showingDetail ? View.VISIBLE : View.GONE);
+            binding.contentScroll.setVisibility(showingDetail ? View.GONE : View.VISIBLE);
+        });
+    }
+
     private void loadLocalRenditions() {
         executor.execute(() -> {
             try {
@@ -152,6 +179,10 @@ public class RenditionsActivity extends AppCompatActivity {
                     originalList.addAll(groups);
                     adapter.submitList(new ArrayList<>(originalList));
                     updateEmptyState(originalList.isEmpty());
+
+                    if (shouldOpenIncomingDetail()) {
+                        binding.contentScroll.postDelayed(this::openIncomingDetail, 200);
+                    }
                 });
             } catch (Exception e) {
                 runOnUiThread(() -> {
@@ -161,6 +192,30 @@ public class RenditionsActivity extends AppCompatActivity {
                 });
             }
         });
+    }
+
+    private boolean shouldOpenIncomingDetail() {
+        return openTaskId != -1
+                && openRenditionJson != null
+                && !openRenditionJson.trim().isEmpty()
+                && openCreatedAt > 0;
+    }
+
+    private void openIncomingDetail() {
+        binding.detailContainer.setVisibility(View.VISIBLE);
+        binding.contentScroll.setVisibility(View.GONE);
+
+        TaskRenditionFragment fragment = TaskRenditionFragment.newDetailInstance(
+                openTaskId,
+                openRenditionJson,
+                openCreatedAt
+        );
+
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.detailContainer, fragment)
+                .addToBackStack("rendition_detail")
+                .commit();
     }
 
     private List<RenditionTaskGroup> buildGroups(List<TaskEntity> taskEntities, List<PendingRendition> pendingRenditions) {
@@ -351,7 +406,7 @@ public class RenditionsActivity extends AppCompatActivity {
 
             String[] directKeys = {
                     "amount", "total", "total_amount", "totalAmount", "approved_total",
-                    "approvedTotal", "value", "valor", "monto"
+                    "approvedTotal", "value", "valor", "monto", "total_reported"
             };
 
             for (String key : directKeys) {
@@ -421,6 +476,15 @@ public class RenditionsActivity extends AppCompatActivity {
             result = result.replace(",00", "");
         }
         return result;
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (getSupportFragmentManager().getBackStackEntryCount() > 0) {
+            getSupportFragmentManager().popBackStack();
+            return;
+        }
+        super.onBackPressed();
     }
 
     @Override

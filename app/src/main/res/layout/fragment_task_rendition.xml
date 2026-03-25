@@ -40,7 +40,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="6dp"
-            android:text="Registro / Actualización de rendiciones"
+            android:text="Reporte de gasto"
             android:textColor="@color/dashboard_text_secondary"
             android:textSize="15sp" />
 
@@ -78,60 +78,12 @@
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
-        <androidx.cardview.widget.CardView
-            android:id="@+id/card_total_approved"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            app:cardBackgroundColor="@android:color/white"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="3dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="18dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Monto total aprobado"
-                    android:textColor="@color/dashboard_text_secondary"
-                    android:textSize="14sp" />
-
-                <TextView
-                    android:id="@+id/tv_total_approved"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="$0"
-                    android:textColor="#45B649"
-                    android:textSize="28sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
         <LinearLayout
-            android:id="@+id/concepts_container"
+            android:id="@+id/form_container"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="28dp"
+            android:layout_marginTop="12dp"
             android:orientation="vertical" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_new_concept"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="18dp"
-            android:text="+  Nuevo concepto"
-            android:textAllCaps="false"
-            android:textColor="@color/dashboard_primary"
-            android:textSize="16sp"
-            app:backgroundTint="@android:color/white"
-            app:cornerRadius="14dp"
-            app:strokeColor="@color/dashboard_primary"
-            app:strokeWidth="1dp" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -158,7 +110,7 @@
                 android:layout_height="56dp"
                 android:layout_weight="1"
                 android:layout_marginStart="8dp"
-                android:text="Guardar&#10;Rendición"
+                android:text="Reportar gasto"
                 android:textAllCaps="false"
                 android:textColor="@android:color/white"
                 android:textStyle="bold"

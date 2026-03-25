@@ -1,5 +1,7 @@
 package com.example.app_ans.tasks.ui;
 
+import android.content.Intent;
+import android.content.UriPermission;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
@@ -8,11 +10,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.widget.AutoCompleteTextView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.AutoCompleteTextView;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -22,47 +24,67 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.app_ans.R;
+import com.example.app_ans.tasks.model.Task;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 public class TaskRenditionFragment extends Fragment {
 
     public static final String ARG_TASK_ID = "task_id";
+    public static final String ARG_RENDITION_JSON = "rendition_json";
+    public static final String ARG_RENDITION_CREATED_AT = "rendition_created_at";
+    public static final String ARG_OPENED_FROM_TASKS = "opened_from_tasks";
 
-    private LinearLayout conceptsContainer;
-    private MaterialButton btnNewConcept;
     private MaterialButton btnCancelRendition;
     private MaterialButton btnSaveRendition;
     private TextView tvTotalReported;
-    private TextView tvTotalApproved;
+    private TextView tvRenditionTaskTitle;
+    private TextView tvRenditionDate;
+    private TextView tvRenditionSubtitle;
+
+    private AutoCompleteTextView actvCategory;
+    private TextInputEditText etAmount;
+    private TextInputEditText etDescription;
+    private TextInputLayout tilAmount;
+    private TextInputLayout tilDescription;
+    private View uploadBox;
+    private TextView tvAttachedFilesCount;
+    private LinearLayout filesPreviewContainer;
 
     private TaskViewModel viewModel;
     private int taskId = -1;
 
-    private final List<ConceptHolder> conceptHolders = new ArrayList<>();
-    private int conceptCounter = 0;
-    private ConceptHolder currentFileTarget;
+    private String openedRenditionJson;
+    private long openedRenditionCreatedAt = 0L;
+    private boolean openedFromTasks = false;
+
+    private final List<Uri> selectedFiles = new ArrayList<>();
+    private final List<StoredAttachment> storedAttachments = new ArrayList<>();
 
     private final ActivityResultLauncher<String[]> renditionFilePickerLauncher =
             registerForActivityResult(
                     new ActivityResultContracts.OpenMultipleDocuments(),
                     uris -> {
-                        if (uris == null || uris.isEmpty() || currentFileTarget == null || getContext() == null) {
+                        if (uris == null || uris.isEmpty() || getContext() == null) {
                             return;
                         }
 
                         List<Uri> validUris = new ArrayList<>();
                         for (Uri uri : uris) {
                             if (com.example.app_ans.core.utils.FileStorageUtils.isValidFile(getContext(), uri)) {
+                                persistReadPermission(uri);
                                 validUris.add(uri);
                             } else {
                                 Toast.makeText(
@@ -75,14 +97,14 @@ public class TaskRenditionFragment extends Fragment {
                         }
 
                         if (!validUris.isEmpty()) {
-                            currentFileTarget.files.clear();
-                            currentFileTarget.files.addAll(validUris);
-                            updateAttachedFilesText(currentFileTarget);
-                            renderFilePreviews(currentFileTarget);
-                            clearUploadError(currentFileTarget);
+                            selectedFiles.clear();
+                            storedAttachments.clear();
+                            selectedFiles.addAll(validUris);
+                            updateAttachedFilesText();
+                            renderFilePreviews();
+                            clearUploadError();
+                            updateTotals();
                         }
-
-                        currentFileTarget = null;
                     }
             );
 
@@ -93,6 +115,17 @@ public class TaskRenditionFragment extends Fragment {
         TaskRenditionFragment fragment = new TaskRenditionFragment();
         Bundle args = new Bundle();
         args.putInt(ARG_TASK_ID, taskId);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
+    public static TaskRenditionFragment newDetailInstance(int taskId, String renditionJson, long createdAt) {
+        TaskRenditionFragment fragment = new TaskRenditionFragment();
+        Bundle args = new Bundle();
+        args.putInt(ARG_TASK_ID, taskId);
+        args.putString(ARG_RENDITION_JSON, renditionJson);
+        args.putLong(ARG_RENDITION_CREATED_AT, createdAt);
+        args.putBoolean(ARG_OPENED_FROM_TASKS, true);
         fragment.setArguments(args);
         return fragment;
     }
@@ -113,157 +146,368 @@ public class TaskRenditionFragment extends Fragment {
 
         if (getArguments() != null) {
             taskId = getArguments().getInt(ARG_TASK_ID, -1);
+            openedRenditionJson = getArguments().getString(ARG_RENDITION_JSON, null);
+            openedRenditionCreatedAt = getArguments().getLong(ARG_RENDITION_CREATED_AT, 0L);
+            openedFromTasks = getArguments().getBoolean(ARG_OPENED_FROM_TASKS, false);
         }
 
-        conceptsContainer = view.findViewById(R.id.concepts_container);
-        btnNewConcept = view.findViewById(R.id.btn_new_concept);
+        tvRenditionTaskTitle = view.findViewById(R.id.tv_rendition_task_title);
+        tvRenditionDate = view.findViewById(R.id.tv_rendition_date);
+        tvTotalReported = view.findViewById(R.id.tv_total_reported);
+        tvRenditionSubtitle = view.findViewById(R.id.tv_rendition_subtitle);
+
         btnCancelRendition = view.findViewById(R.id.btn_cancel_rendition);
         btnSaveRendition = view.findViewById(R.id.btn_save_rendition);
-        tvTotalReported = view.findViewById(R.id.tv_total_reported);
-        tvTotalApproved = view.findViewById(R.id.tv_total_approved);
 
-        addNewConcept();
+        setupSingleExpenseForm(view);
+        setupHeader();
 
-        btnNewConcept.setOnClickListener(v -> addNewConcept());
+        if (openedFromTasks && openedRenditionJson != null && !openedRenditionJson.trim().isEmpty()) {
+            fillFormWithExistingRendition();
+        }
+
         btnCancelRendition.setOnClickListener(v -> cancelRendition());
-        btnSaveRendition.setOnClickListener(v -> validateAndSaveRendition());
+
+        btnSaveRendition.setOnClickListener(v -> {
+            if (openedFromTasks) {
+                Toast.makeText(
+                        getContext(),
+                        "Este detalle pertenece al módulo de Rendiciones.",
+                        Toast.LENGTH_SHORT
+                ).show();
+            } else {
+                validateAndSaveRendition();
+            }
+        });
+
+        if (openedFromTasks) {
+            if (tvRenditionSubtitle != null) {
+                tvRenditionSubtitle.setText("Detalle del gasto reportado");
+            }
+            if (btnSaveRendition != null) {
+                btnSaveRendition.setText("Detalle cargado");
+                btnSaveRendition.setEnabled(false);
+                btnSaveRendition.setAlpha(0.7f);
+            }
+        }
 
         updateTotals();
     }
 
-    private void addNewConcept() {
-        if (getContext() == null || conceptsContainer == null) return;
+    private void setupHeader() {
+        Task currentTask = null;
 
-        conceptCounter++;
+        if (viewModel.getTaskDetail().getValue() != null
+                && viewModel.getTaskDetail().getValue().getId() == taskId) {
+            currentTask = viewModel.getTaskDetail().getValue();
+        }
+
+        if (currentTask == null && viewModel.getTasks().getValue() != null) {
+            for (Task item : viewModel.getTasks().getValue()) {
+                if (item != null && item.getId() == taskId) {
+                    currentTask = item;
+                    break;
+                }
+            }
+        }
+
+        if (currentTask != null && tvRenditionTaskTitle != null) {
+            tvRenditionTaskTitle.setText(
+                    currentTask.getName() != null ? currentTask.getName() : "Tarea"
+            );
+        }
+
+        if (tvRenditionDate != null) {
+            if (openedFromTasks && openedRenditionCreatedAt > 0) {
+                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+                tvRenditionDate.setText(sdf.format(new Date(openedRenditionCreatedAt)));
+            } else if (currentTask != null && currentTask.getStartTime() != null) {
+                tvRenditionDate.setText(
+                        com.example.app_ans.core.utils.DateUtils.formatDateOnly(currentTask.getStartTime())
+                );
+            }
+        }
+    }
+
+    private void setupSingleExpenseForm(View rootView) {
+        if (getContext() == null) return;
+
+        ViewGroup rootLinear = findMainLinearLayout(rootView);
+        if (rootLinear == null) return;
 
         LayoutInflater inflater = LayoutInflater.from(getContext());
-        View conceptView = inflater.inflate(R.layout.item_rendition_concept, conceptsContainer, false);
+        View formView = inflater.inflate(R.layout.item_rendition_concept, rootLinear, false);
 
-        TextView tvConceptTitle = conceptView.findViewById(R.id.tv_concept_title);
-        ImageView ivExpandConcept = conceptView.findViewById(R.id.iv_expand_concept);
-        LinearLayout conceptContent = conceptView.findViewById(R.id.concept_content);
-        LinearLayout conceptHeader = conceptView.findViewById(R.id.concept_header);
-        AutoCompleteTextView actvCategory = conceptView.findViewById(R.id.actv_category);
-        TextInputEditText etAmount = conceptView.findViewById(R.id.et_amount);
-        TextInputEditText etDescription = conceptView.findViewById(R.id.et_description);
-        TextInputLayout tilAmount = conceptView.findViewById(R.id.til_amount);
-        TextInputLayout tilDescription = conceptView.findViewById(R.id.til_description);
-        View uploadBox = conceptView.findViewById(R.id.upload_box);
-        TextView tvAttachedFilesCount = conceptView.findViewById(R.id.tv_attached_files_count);
-        LinearLayout filesPreviewContainer = conceptView.findViewById(R.id.files_preview_container);
+        actvCategory = formView.findViewById(R.id.actv_category);
+        etAmount = formView.findViewById(R.id.et_amount);
+        etDescription = formView.findViewById(R.id.et_description);
+        tilAmount = formView.findViewById(R.id.til_amount);
+        tilDescription = formView.findViewById(R.id.til_description);
+        uploadBox = formView.findViewById(R.id.upload_box);
+        tvAttachedFilesCount = formView.findViewById(R.id.tv_attached_files_count);
+        filesPreviewContainer = formView.findViewById(R.id.files_preview_container);
 
-        ConceptHolder holder = new ConceptHolder();
-        holder.index = conceptCounter;
-        holder.rootView = conceptView;
-        holder.conceptHeader = conceptHeader;
-        holder.conceptContent = conceptContent;
-        holder.ivExpandConcept = ivExpandConcept;
-        holder.actvCategory = actvCategory;
-        holder.etAmount = etAmount;
-        holder.etDescription = etDescription;
-        holder.tilAmount = tilAmount;
-        holder.tilDescription = tilDescription;
-        holder.uploadBox = uploadBox;
-        holder.tvAttachedFilesCount = tvAttachedFilesCount;
-        holder.filesPreviewContainer = filesPreviewContainer;
+        if (etAmount != null) {
+            etAmount.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                }
 
-        tvConceptTitle.setText("Concepto " + conceptCounter);
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    clearAmountError();
+                    updateTotals();
+                }
 
-        conceptContent.setVisibility(View.VISIBLE);
-        ivExpandConcept.setRotation(90f);
+                @Override
+                public void afterTextChanged(Editable s) {
+                }
+            });
+        }
 
-        View.OnClickListener toggleListener = v -> toggleConcept(holder);
-        conceptHeader.setOnClickListener(toggleListener);
-        ivExpandConcept.setOnClickListener(toggleListener);
+        if (etDescription != null) {
+            etDescription.addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                }
 
-        etAmount.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    clearDescriptionError();
+                }
 
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                clearAmountError(holder);
-                updateTotals();
-            }
+                @Override
+                public void afterTextChanged(Editable s) {
+                }
+            });
+        }
 
-            @Override
-            public void afterTextChanged(Editable s) {
-            }
-        });
+        if (uploadBox != null) {
+            uploadBox.setOnClickListener(v -> {
+                if (openedFromTasks) {
+                    Toast.makeText(
+                            getContext(),
+                            "Toca el archivo listado abajo para abrirlo.",
+                            Toast.LENGTH_SHORT
+                    ).show();
+                } else {
+                    openFilePicker();
+                }
+            });
+        }
 
-        etDescription.addTextChangedListener(new TextWatcher() {
-            @Override
-            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-            }
+        updateAttachedFilesText();
+        renderFilePreviews();
 
-            @Override
-            public void onTextChanged(CharSequence s, int start, int before, int count) {
-                clearDescriptionError(holder);
-            }
-
-            @Override
-            public void afterTextChanged(Editable s) {
-            }
-        });
-
-        uploadBox.setOnClickListener(v -> openFilePickerForConcept(holder));
-        updateAttachedFilesText(holder);
-        renderFilePreviews(holder);
-
-        conceptHolders.add(holder);
-        conceptsContainer.addView(conceptView);
-
-        updateTotals();
+        int insertIndex = Math.max(rootLinear.getChildCount() - 1, 0);
+        rootLinear.addView(formView, insertIndex);
     }
 
-    private void toggleConcept(ConceptHolder holder) {
-        boolean isVisible = holder.conceptContent.getVisibility() == View.VISIBLE;
-        holder.conceptContent.setVisibility(isVisible ? View.GONE : View.VISIBLE);
-        holder.ivExpandConcept.setRotation(isVisible ? 0f : 90f);
+    private void fillFormWithExistingRendition() {
+        try {
+            JsonObject jsonObject = JsonParser.parseString(openedRenditionJson).getAsJsonObject();
+
+            String category = getStringField(jsonObject, "category");
+            long amount = getLongField(jsonObject, "amount",
+                    getLongField(jsonObject, "total_reported", 0L));
+            String description = getStringField(jsonObject, "description");
+
+            if (actvCategory != null) {
+                actvCategory.setText(category, false);
+                actvCategory.setEnabled(false);
+                actvCategory.setFocusable(false);
+                actvCategory.setClickable(false);
+            }
+
+            if (etAmount != null) {
+                etAmount.setText(String.valueOf(amount));
+                etAmount.setEnabled(false);
+                etAmount.setFocusable(false);
+                etAmount.setClickable(false);
+            }
+
+            if (etDescription != null) {
+                etDescription.setText(description);
+                etDescription.setEnabled(false);
+                etDescription.setFocusable(false);
+                etDescription.setClickable(false);
+            }
+
+            if (tilAmount != null) {
+                tilAmount.setEnabled(false);
+            }
+
+            if (tilDescription != null) {
+                tilDescription.setEnabled(false);
+            }
+
+            if (uploadBox != null) {
+                uploadBox.setAlpha(0.7f);
+            }
+
+            selectedFiles.clear();
+            storedAttachments.clear();
+
+            if (jsonObject.has("files") && jsonObject.get("files").isJsonArray()) {
+                JsonArray filesArray = jsonObject.getAsJsonArray("files");
+                for (int i = 0; i < filesArray.size(); i++) {
+                    if (!filesArray.get(i).isJsonObject()) continue;
+
+                    JsonObject fileObj = filesArray.get(i).getAsJsonObject();
+                    StoredAttachment attachment = new StoredAttachment();
+                    attachment.name = getStringField(fileObj, "name");
+                    attachment.uri = getStringField(fileObj, "uri");
+                    attachment.mimeType = getStringField(fileObj, "mime_type");
+
+                    if (attachment.name == null || attachment.name.trim().isEmpty()) {
+                        attachment.name = "Archivo adjunto " + (i + 1);
+                    }
+
+                    storedAttachments.add(attachment);
+                }
+            } else {
+                int filesCount = getIntField(jsonObject, "files_count", 0);
+                for (int i = 1; i <= filesCount; i++) {
+                    StoredAttachment attachment = new StoredAttachment();
+                    attachment.name = "Archivo adjunto " + i;
+                    attachment.uri = "";
+                    attachment.mimeType = "";
+                    storedAttachments.add(attachment);
+                }
+            }
+
+            updateAttachedFilesText();
+            renderFilePreviews();
+            updateTotals();
+
+        } catch (Exception e) {
+            Toast.makeText(
+                    getContext(),
+                    "No se pudo cargar el detalle del reporte.",
+                    Toast.LENGTH_SHORT
+            ).show();
+        }
     }
 
-    private void expandConcept(ConceptHolder holder) {
-        holder.conceptContent.setVisibility(View.VISIBLE);
-        holder.ivExpandConcept.setRotation(90f);
+    private String getStringField(JsonObject json, String key) {
+        try {
+            return json.has(key) && !json.get(key).isJsonNull() ? json.get(key).getAsString() : "";
+        } catch (Exception e) {
+            return "";
+        }
     }
 
-    private void openFilePickerForConcept(ConceptHolder holder) {
-        currentFileTarget = holder;
+    private long getLongField(JsonObject json, String key, long defaultValue) {
+        try {
+            return json.has(key) && !json.get(key).isJsonNull() ? json.get(key).getAsLong() : defaultValue;
+        } catch (Exception e) {
+            return defaultValue;
+        }
+    }
 
+    private int getIntField(JsonObject json, String key, int defaultValue) {
+        try {
+            return json.has(key) && !json.get(key).isJsonNull() ? json.get(key).getAsInt() : defaultValue;
+        } catch (Exception e) {
+            return defaultValue;
+        }
+    }
+
+    private ViewGroup findMainLinearLayout(View rootView) {
+        if (rootView instanceof ViewGroup) {
+            ViewGroup rootGroup = (ViewGroup) rootView;
+            if (rootGroup.getChildCount() > 0 && rootGroup.getChildAt(0) instanceof ViewGroup) {
+                return (ViewGroup) rootGroup.getChildAt(0);
+            }
+        }
+        return null;
+    }
+
+    private void openFilePicker() {
         String[] mimeTypes = {
-                "image/jpeg", "image/png", "image/webp", "application/pdf",
-                "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                "application/vnd.ms-excel", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                "application/vnd.ms-powerpoint", "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                "image/jpeg",
+                "image/png",
+                "image/webp",
+                "application/pdf",
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "application/vnd.ms-excel",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "application/vnd.ms-powerpoint",
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation"
         };
 
         renditionFilePickerLauncher.launch(mimeTypes);
     }
 
-    private void updateAttachedFilesText(ConceptHolder holder) {
-        if (holder.tvAttachedFilesCount == null) return;
+    private void persistReadPermission(Uri uri) {
+        if (getContext() == null || uri == null) return;
 
-        int count = holder.files.size();
-        if (count == 0) {
-            holder.tvAttachedFilesCount.setText("Imágenes, PDF, documentos");
-        } else if (count == 1) {
-            holder.tvAttachedFilesCount.setText("1 archivo seleccionado");
-        } else {
-            holder.tvAttachedFilesCount.setText(count + " archivos seleccionados");
+        try {
+            getContext().getContentResolver().takePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION
+            );
+        } catch (Exception ignored) {
         }
     }
 
-    private void renderFilePreviews(ConceptHolder holder) {
-        if (holder.filesPreviewContainer == null || getContext() == null) return;
+    private void updateAttachedFilesText() {
+        if (tvAttachedFilesCount == null) return;
 
-        holder.filesPreviewContainer.removeAllViews();
+        int count = openedFromTasks ? storedAttachments.size() : selectedFiles.size();
 
+        if (count == 0) {
+            tvAttachedFilesCount.setText("Imágenes, PDF, documentos");
+        } else if (count == 1) {
+            tvAttachedFilesCount.setText("1 archivo adjunto");
+        } else {
+            tvAttachedFilesCount.setText(count + " archivos adjuntos");
+        }
+    }
+
+    private void renderFilePreviews() {
+        if (filesPreviewContainer == null || getContext() == null) return;
+
+        filesPreviewContainer.removeAllViews();
         LayoutInflater inflater = LayoutInflater.from(getContext());
 
-        for (int i = 0; i < holder.files.size(); i++) {
-            Uri fileUri = holder.files.get(i);
-            View itemView = inflater.inflate(R.layout.item_attached_file_preview, holder.filesPreviewContainer, false);
+        if (openedFromTasks) {
+            for (int i = 0; i < storedAttachments.size(); i++) {
+                StoredAttachment attachment = storedAttachments.get(i);
+
+                View itemView = inflater.inflate(R.layout.item_attached_file_preview, filesPreviewContainer, false);
+
+                ImageView ivFileIcon = itemView.findViewById(R.id.iv_file_icon);
+                TextView tvFileName = itemView.findViewById(R.id.tv_file_name);
+                TextView tvFileMeta = itemView.findViewById(R.id.tv_file_meta);
+                ImageView ivRemoveFile = itemView.findViewById(R.id.iv_remove_file);
+
+                tvFileName.setText(
+                        attachment.name != null && !attachment.name.trim().isEmpty()
+                                ? attachment.name
+                                : "Archivo adjunto"
+                );
+
+                tvFileMeta.setText(
+                        attachment.mimeType != null && !attachment.mimeType.trim().isEmpty()
+                                ? attachment.mimeType
+                                : "Archivo adjunto"
+                );
+
+                ivFileIcon.setImageResource(R.drawable.iconodc);
+                ivRemoveFile.setVisibility(View.GONE);
+
+                itemView.setOnClickListener(v -> openStoredAttachment(attachment));
+
+                filesPreviewContainer.addView(itemView);
+            }
+            return;
+        }
+
+        for (int i = 0; i < selectedFiles.size(); i++) {
+            Uri fileUri = selectedFiles.get(i);
+            View itemView = inflater.inflate(R.layout.item_attached_file_preview, filesPreviewContainer, false);
 
             ImageView ivFileIcon = itemView.findViewById(R.id.iv_file_icon);
             TextView tvFileName = itemView.findViewById(R.id.tv_file_name);
@@ -275,23 +519,58 @@ public class TaskRenditionFragment extends Fragment {
 
             tvFileName.setText(fileName != null ? fileName : "Archivo");
             tvFileMeta.setText(getFileTypeLabel(fileName, mimeType));
-            ivFileIcon.setImageResource(getFileIconRes(fileName, mimeType));
+            ivFileIcon.setImageResource(R.drawable.iconodc);
 
             final int index = i;
             ivRemoveFile.setOnClickListener(v -> {
-                if (index >= 0 && index < holder.files.size()) {
-                    holder.files.remove(index);
-                    updateAttachedFilesText(holder);
-                    renderFilePreviews(holder);
+                if (index >= 0 && index < selectedFiles.size()) {
+                    selectedFiles.remove(index);
+                    updateAttachedFilesText();
+                    renderFilePreviews();
+                    updateTotals();
                 }
             });
 
-            holder.filesPreviewContainer.addView(itemView);
+            filesPreviewContainer.addView(itemView);
         }
     }
 
-    private int getFileIconRes(String fileName, String mimeType) {
-        return R.drawable.iconodc;
+    private void openStoredAttachment(StoredAttachment attachment) {
+        if (getContext() == null || attachment == null) return;
+
+        if (attachment.uri == null || attachment.uri.trim().isEmpty()) {
+            Toast.makeText(
+                    getContext(),
+                    "Este reporte viejo no guarda la ruta real del archivo.",
+                    Toast.LENGTH_SHORT
+            ).show();
+            return;
+        }
+
+        try {
+            Uri uri = Uri.parse(attachment.uri);
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setDataAndType(
+                    uri,
+                    attachment.mimeType != null && !attachment.mimeType.trim().isEmpty()
+                            ? attachment.mimeType
+                            : "*/*"
+            );
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            startActivity(intent);
+        } catch (Exception e) {
+            try {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(attachment.uri));
+                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                startActivity(intent);
+            } catch (Exception ex) {
+                Toast.makeText(
+                        getContext(),
+                        "No se pudo abrir el archivo adjunto.",
+                        Toast.LENGTH_SHORT
+                ).show();
+            }
+        }
     }
 
     private String getFileTypeLabel(String fileName, String mimeType) {
@@ -306,7 +585,8 @@ public class TaskRenditionFragment extends Fragment {
             return "Imagen";
         }
 
-        if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg") || lowerName.endsWith(".png") || lowerName.endsWith(".webp")) {
+        if (lowerName.endsWith(".jpg") || lowerName.endsWith(".jpeg")
+                || lowerName.endsWith(".png") || lowerName.endsWith(".webp")) {
             return "Imagen";
         }
 
@@ -326,11 +606,6 @@ public class TaskRenditionFragment extends Fragment {
     }
 
     private void validateAndSaveRendition() {
-        if (conceptHolders.isEmpty()) {
-            Toast.makeText(getContext(), "Debes agregar al menos un concepto.", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
         if (taskId <= 0) {
             Toast.makeText(getContext(), "No se encontró el id de la tarea.", Toast.LENGTH_SHORT).show();
             return;
@@ -338,71 +613,72 @@ public class TaskRenditionFragment extends Fragment {
 
         clearAllErrors();
 
-        for (ConceptHolder holder : conceptHolders) {
-            expandConcept(holder);
+        long amount = parseAmount(etAmount != null ? etAmount.getText() : null);
+        String description = etDescription != null && etDescription.getText() != null
+                ? etDescription.getText().toString().trim()
+                : "";
+        String category = actvCategory != null
+                ? actvCategory.getText().toString().trim()
+                : "";
 
-            long amount = parseAmount(holder.etAmount != null ? holder.etAmount.getText() : null);
-            String description = holder.etDescription != null && holder.etDescription.getText() != null
-                    ? holder.etDescription.getText().toString().trim()
-                    : "";
-
-            if (amount <= 0) {
-                showAmountError(holder);
-                Toast.makeText(getContext(), "Falta el monto en el Concepto " + holder.index, Toast.LENGTH_SHORT).show();
-                focusView(holder.tilAmount != null ? holder.tilAmount : holder.etAmount);
-                return;
-            }
-
-            if (description.isEmpty()) {
-                showDescriptionError(holder);
-                Toast.makeText(getContext(), "Falta la descripción en el Concepto " + holder.index, Toast.LENGTH_SHORT).show();
-                focusView(holder.tilDescription != null ? holder.tilDescription : holder.etDescription);
-                return;
-            }
-
-            if (holder.files.isEmpty()) {
-                showUploadError(holder);
-                Toast.makeText(getContext(), "Falta adjuntar archivo en el Concepto " + holder.index, Toast.LENGTH_SHORT).show();
-                focusView(holder.uploadBox);
-                return;
-            }
+        if (amount <= 0) {
+            showAmountError();
+            Toast.makeText(getContext(), "Falta el monto.", Toast.LENGTH_SHORT).show();
+            focusView(tilAmount != null ? tilAmount : etAmount);
+            return;
         }
 
-        saveRenditionLocally();
+        if (description.isEmpty()) {
+            showDescriptionError();
+            Toast.makeText(getContext(), "Falta la descripción.", Toast.LENGTH_SHORT).show();
+            focusView(tilDescription != null ? tilDescription : etDescription);
+            return;
+        }
+
+        if (selectedFiles.isEmpty()) {
+            showUploadError();
+            Toast.makeText(getContext(), "Falta adjuntar al menos un archivo.", Toast.LENGTH_SHORT).show();
+            focusView(uploadBox);
+            return;
+        }
+
+        saveRenditionLocally(category, amount, description);
     }
 
-    private void saveRenditionLocally() {
+    private void saveRenditionLocally(String category, long amount, String description) {
         try {
-            List<Map<String, Object>> concepts = new ArrayList<>();
-            List<Uri> allFiles = new ArrayList<>();
+            JsonObject expenseMap = new JsonObject();
+            expenseMap.addProperty("task_id", taskId);
+            expenseMap.addProperty("category", category);
+            expenseMap.addProperty("amount", amount);
+            expenseMap.addProperty("description", description);
+            expenseMap.addProperty("files_count", selectedFiles.size());
+            expenseMap.addProperty("total_reported", amount);
+            expenseMap.addProperty("created_at", System.currentTimeMillis());
 
-            for (ConceptHolder holder : conceptHolders) {
-                Map<String, Object> conceptMap = new HashMap<>();
-                conceptMap.put("index", holder.index);
-                conceptMap.put("category", holder.actvCategory != null ? holder.actvCategory.getText().toString().trim() : "");
-                conceptMap.put("amount", parseAmount(holder.etAmount != null ? holder.etAmount.getText() : null));
-                conceptMap.put("description", holder.etDescription != null && holder.etDescription.getText() != null
-                        ? holder.etDescription.getText().toString().trim()
-                        : "");
-                conceptMap.put("files_count", holder.files.size());
+            JsonArray filesArray = new JsonArray();
 
-                concepts.add(conceptMap);
-                allFiles.addAll(holder.files);
+            for (Uri uri : selectedFiles) {
+                JsonObject fileObj = new JsonObject();
+                String fileName = com.example.app_ans.core.utils.FileStorageUtils.getFileName(getContext(), uri);
+                String mimeType = getContext() != null
+                        ? getContext().getContentResolver().getType(uri)
+                        : "";
+
+                fileObj.addProperty("name", fileName != null ? fileName : "Archivo");
+                fileObj.addProperty("uri", uri.toString());
+                fileObj.addProperty("mime_type", mimeType != null ? mimeType : "");
+
+                filesArray.add(fileObj);
             }
 
-            Map<String, Object> renditionMap = new HashMap<>();
-            renditionMap.put("task_id", taskId);
-            renditionMap.put("total_reported", calculateTotalReported());
-            renditionMap.put("total_approved", 0);
-            renditionMap.put("concepts", concepts);
-            renditionMap.put("created_at", System.currentTimeMillis());
+            expenseMap.add("files", filesArray);
 
-            Gson gson = new Gson();
-            String renditionJson = gson.toJson(renditionMap);
+            String renditionJson = new Gson().toJson(expenseMap);
 
-            viewModel.saveRenditionOffline(taskId, renditionJson, allFiles);
+            viewModel.saveRenditionOffline(taskId, renditionJson, new ArrayList<>(selectedFiles));
 
-            Toast.makeText(getContext(), "Rendición guardada localmente", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Gasto reportado localmente", Toast.LENGTH_SHORT).show();
 
             if (isAdded()) {
                 requireActivity()
@@ -410,66 +686,58 @@ public class TaskRenditionFragment extends Fragment {
                         .popBackStack();
             }
         } catch (Exception e) {
-            Toast.makeText(getContext(), "Error al guardar rendición: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(getContext(), "Error al guardar gasto: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
     }
 
     private long calculateTotalReported() {
-        long totalReported = 0;
-
-        for (ConceptHolder holder : conceptHolders) {
-            totalReported += parseAmount(holder.etAmount != null ? holder.etAmount.getText() : null);
-        }
-
-        return totalReported;
+        return parseAmount(etAmount != null ? etAmount.getText() : null);
     }
 
-    private void showAmountError(ConceptHolder holder) {
-        if (holder.tilAmount != null) {
-            holder.tilAmount.setError("Ingresa el monto");
-            holder.tilAmount.setErrorEnabled(true);
+    private void showAmountError() {
+        if (tilAmount != null) {
+            tilAmount.setError("Ingresa el monto");
+            tilAmount.setErrorEnabled(true);
         }
     }
 
-    private void clearAmountError(ConceptHolder holder) {
-        if (holder.tilAmount != null) {
-            holder.tilAmount.setError(null);
-            holder.tilAmount.setErrorEnabled(false);
+    private void clearAmountError() {
+        if (tilAmount != null) {
+            tilAmount.setError(null);
+            tilAmount.setErrorEnabled(false);
         }
     }
 
-    private void showDescriptionError(ConceptHolder holder) {
-        if (holder.tilDescription != null) {
-            holder.tilDescription.setError("Ingresa la descripción");
-            holder.tilDescription.setErrorEnabled(true);
+    private void showDescriptionError() {
+        if (tilDescription != null) {
+            tilDescription.setError("Ingresa la descripción");
+            tilDescription.setErrorEnabled(true);
         }
     }
 
-    private void clearDescriptionError(ConceptHolder holder) {
-        if (holder.tilDescription != null) {
-            holder.tilDescription.setError(null);
-            holder.tilDescription.setErrorEnabled(false);
+    private void clearDescriptionError() {
+        if (tilDescription != null) {
+            tilDescription.setError(null);
+            tilDescription.setErrorEnabled(false);
         }
     }
 
-    private void showUploadError(ConceptHolder holder) {
-        if (holder.uploadBox != null && getContext() != null) {
-            holder.uploadBox.setBackgroundResource(R.drawable.bg_upload_box_error);
+    private void showUploadError() {
+        if (uploadBox != null) {
+            uploadBox.setBackgroundResource(R.drawable.bg_upload_box_error);
         }
     }
 
-    private void clearUploadError(ConceptHolder holder) {
-        if (holder.uploadBox != null && getContext() != null) {
-            holder.uploadBox.setBackgroundResource(R.drawable.bg_upload_box_selector);
+    private void clearUploadError() {
+        if (uploadBox != null) {
+            uploadBox.setBackgroundResource(R.drawable.bg_upload_box_selector);
         }
     }
 
     private void clearAllErrors() {
-        for (ConceptHolder holder : conceptHolders) {
-            clearAmountError(holder);
-            clearDescriptionError(holder);
-            clearUploadError(holder);
-        }
+        clearAmountError();
+        clearDescriptionError();
+        clearUploadError();
     }
 
     private void focusView(View view) {
@@ -495,32 +763,48 @@ public class TaskRenditionFragment extends Fragment {
     }
 
     private void clearRenditionForm() {
-        conceptHolders.clear();
-        conceptCounter = 0;
-        currentFileTarget = null;
+        selectedFiles.clear();
+        storedAttachments.clear();
 
-        if (conceptsContainer != null) {
-            conceptsContainer.removeAllViews();
-        }
+        if (actvCategory != null) actvCategory.setText("");
+        if (etAmount != null) etAmount.setText("");
+        if (etDescription != null) etDescription.setText("");
 
-        if (tvTotalReported != null) {
-            tvTotalReported.setText(formatCurrency(0));
-        }
-
-        if (tvTotalApproved != null) {
-            tvTotalApproved.setText(formatCurrency(0));
-        }
+        updateAttachedFilesText();
+        renderFilePreviews();
+        updateTotals();
+        clearAllErrors();
     }
 
     private void updateTotals() {
-        long totalReported = calculateTotalReported();
+        long totalReported;
+
+        if (openedFromTasks && openedRenditionJson != null) {
+            totalReported = extractTotalFromJson(openedRenditionJson);
+        } else {
+            totalReported = calculateTotalReported();
+        }
 
         if (tvTotalReported != null) {
             tvTotalReported.setText(formatCurrency(totalReported));
         }
+    }
 
-        if (tvTotalApproved != null) {
-            tvTotalApproved.setText(formatCurrency(0));
+    private long extractTotalFromJson(String renditionJson) {
+        try {
+            JsonObject jsonObject = JsonParser.parseString(renditionJson).getAsJsonObject();
+
+            if (jsonObject.has("total_reported") && !jsonObject.get("total_reported").isJsonNull()) {
+                return jsonObject.get("total_reported").getAsLong();
+            }
+
+            if (jsonObject.has("amount") && !jsonObject.get("amount").isJsonNull()) {
+                return jsonObject.get("amount").getAsLong();
+            }
+
+            return 0L;
+        } catch (Exception e) {
+            return 0L;
         }
     }
 
@@ -545,20 +829,9 @@ public class TaskRenditionFragment extends Fragment {
         return "$" + format.format(value);
     }
 
-    private static class ConceptHolder {
-        int index;
-        View rootView;
-        View conceptHeader;
-        LinearLayout conceptContent;
-        ImageView ivExpandConcept;
-        AutoCompleteTextView actvCategory;
-        TextInputEditText etAmount;
-        TextInputEditText etDescription;
-        TextInputLayout tilAmount;
-        TextInputLayout tilDescription;
-        View uploadBox;
-        TextView tvAttachedFilesCount;
-        LinearLayout filesPreviewContainer;
-        List<Uri> files = new ArrayList<>();
+    private static class StoredAttachment {
+        String name;
+        String uri;
+        String mimeType;
     }
 }

@@ -2,6 +2,7 @@ package com.example.app_ans.tasks.ui;
 
 import android.Manifest;
 import android.app.AlertDialog;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
 import android.location.Location;
@@ -28,7 +29,6 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.app_ans.R;
-import com.example.app_ans.core.persistence.AppDatabase;
 import com.example.app_ans.core.utils.DateUtils;
 import com.example.app_ans.databinding.FragmentTaskDetailBinding;
 import com.example.app_ans.tasks.model.AssignedUser;
@@ -46,12 +46,9 @@ import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.overlay.Marker;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 public class TaskDetailFragment extends Fragment {
     private static final String ARG_TASK_DATA = "TASK_DATA";
@@ -80,8 +77,6 @@ public class TaskDetailFragment extends Fragment {
     private final Handler timerHandler = new Handler(Looper.getMainLooper());
     private Runnable timerRunnable;
     private long timerBaseTime = 0;
-
-    private final ExecutorService renditionValidationExecutor = Executors.newSingleThreadExecutor();
 
     private final ActivityResultLauncher<String[]> locationPermissionLauncher = registerForActivityResult(
             new ActivityResultContracts.RequestMultiplePermissions(),
@@ -276,7 +271,6 @@ public class TaskDetailFragment extends Fragment {
     @Override
     public void onDestroyView() {
         stopTimer();
-        renditionValidationExecutor.shutdown();
 
         View activityBack = requireActivity().findViewById(R.id.back_to_home);
         if (activityBack != null) {
@@ -537,9 +531,25 @@ public class TaskDetailFragment extends Fragment {
         binding.advancesRecycler.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.advancesRecycler.setAdapter(advanceAdapter);
 
-        renditionAdapter = new TaskRenditionAdapter();
+        renditionAdapter = new TaskRenditionAdapter(this::openRenditionDetailInModule);
         binding.renditionsRecycler.setLayoutManager(new LinearLayoutManager(getContext()));
         binding.renditionsRecycler.setAdapter(renditionAdapter);
+    }
+
+    private void openRenditionDetailInModule(PendingRendition rendition) {
+        if (getContext() == null || task == null || rendition == null) return;
+
+        Toast.makeText(
+                getContext(),
+                "Abriendo detalle en el módulo de Rendiciones…",
+                Toast.LENGTH_SHORT
+        ).show();
+
+        Intent intent = new Intent(getContext(), RenditionsActivity.class);
+        intent.putExtra("open_task_id", task.getId());
+        intent.putExtra("open_rendition_json", rendition.renditionJson);
+        intent.putExtra("open_created_at", rendition.createdAt);
+        startActivity(intent);
     }
 
     private void showFullScreenImage(String imageUrl) {
@@ -639,45 +649,14 @@ public class TaskDetailFragment extends Fragment {
     private void openTaskRenditionFragment() {
         if (task == null) return;
 
-        renditionValidationExecutor.execute(() -> {
-            try {
-                Calendar calendar = Calendar.getInstance();
-                calendar.set(Calendar.HOUR_OF_DAY, 0);
-                calendar.set(Calendar.MINUTE, 0);
-                calendar.set(Calendar.SECOND, 0);
-                calendar.set(Calendar.MILLISECOND, 0);
-                long startOfDay = calendar.getTimeInMillis();
+        int containerId = ((ViewGroup) requireView().getParent()).getId();
 
-                calendar.set(Calendar.HOUR_OF_DAY, 23);
-                calendar.set(Calendar.MINUTE, 59);
-                calendar.set(Calendar.SECOND, 59);
-                calendar.set(Calendar.MILLISECOND, 999);
-                long endOfDay = calendar.getTimeInMillis();
-
-                AppDatabase db = AppDatabase.getInstance(requireContext().getApplicationContext());
-                int count = db.pendingRenditionDao().countByTaskIdAndDay(task.getId(), startOfDay, endOfDay);
-
-                requireActivity().runOnUiThread(() -> {
-                    if (count > 0) {
-                        showRenditionBlockedDialog();
-                    } else {
-                        int containerId = ((ViewGroup) requireView().getParent()).getId();
-
-                        requireActivity()
-                                .getSupportFragmentManager()
-                                .beginTransaction()
-                                .replace(containerId, TaskRenditionFragment.newInstance(task.getId()))
-                                .addToBackStack(null)
-                                .commit();
-                    }
-                });
-
-            } catch (Exception e) {
-                requireActivity().runOnUiThread(() ->
-                        Toast.makeText(getContext(), "No se pudo validar la rendición del día", Toast.LENGTH_SHORT).show()
-                );
-            }
-        });
+        requireActivity()
+                .getSupportFragmentManager()
+                .beginTransaction()
+                .replace(containerId, TaskRenditionFragment.newInstance(task.getId()))
+                .addToBackStack(null)
+                .commit();
     }
 
     private boolean hasAnotherRunningTask() {
@@ -704,34 +683,6 @@ public class TaskDetailFragment extends Fragment {
         TextView btnOk = dialogView.findViewById(R.id.btnDialogOk);
 
         tvMessage.setText("Ya tienes otra tarea en curso. Debes finalizarla o pausarla antes de iniciar una nueva.");
-
-        AlertDialog dialog = new AlertDialog.Builder(getContext())
-                .setView(dialogView)
-                .create();
-
-        if (dialog.getWindow() != null) {
-            dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
-        }
-
-        btnOk.setOnClickListener(v -> dialog.dismiss());
-
-        dialog.show();
-    }
-
-    private void showRenditionBlockedDialog() {
-        if (getContext() == null) return;
-
-        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_task_blocked, null);
-
-        TextView tvTitle = dialogView.findViewById(R.id.tvDialogTitle);
-        TextView tvMessage = dialogView.findViewById(R.id.tvDialogMessage);
-        TextView btnOk = dialogView.findViewById(R.id.btnDialogOk);
-
-        if (tvTitle != null) {
-            tvTitle.setText("No puedes crear otra rendición hoy");
-        }
-
-        tvMessage.setText("Ya existe una rendición registrada para esta tarea el día de hoy. Solo puedes crear una rendición por día para esta tarea.");
 
         AlertDialog dialog = new AlertDialog.Builder(getContext())
                 .setView(dialogView)
